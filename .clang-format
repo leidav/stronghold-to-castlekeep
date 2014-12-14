@@ -1,0 +1,8 @@
+#format style
+
+BasedOnStyle: Google
+AccessModifierOffset: -4
+BreakBeforeBraces: Linux
+IndentWidth: 4
+TabWidth: 4
+UseTab: ForIndentation #Always

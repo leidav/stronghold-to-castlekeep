@@ -1,0 +1,10 @@
+*.[oa]
+
+*.swp
+*.user
+*~
+
+build/
+bin/
+CmakeFiles
+CMakeCache.txt
