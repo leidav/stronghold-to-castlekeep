@@ -1,4 +1,4 @@
-stronghold 2 castlekeep
+stronghold to castlekeep
 =======================
 
 ###Build instructions###
@@ -19,4 +19,4 @@ Build:
 ###Usage###
 
     cd ../bin
-    sh2ck input_file output_file
+    sh2ck input_file output_dir
