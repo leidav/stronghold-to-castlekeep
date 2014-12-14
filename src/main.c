@@ -26,7 +26,7 @@
 
 static void printHelp(FILE *fp)
 {
-	fprintf(fp, "Usage: sh2ck input_file output_file\n");
+	fprintf(fp, "Usage: sh2ck input_file output_dir\n");
 }
 
 int main(int argc, char *argv[])
