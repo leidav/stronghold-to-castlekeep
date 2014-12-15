@@ -62,11 +62,17 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	mkdir(output_dir, 0775);
+	if (mkdir(output_dir, 0775) == -1) {
+		fprintf(stderr,"Error on creating directory\n");
+		return 1;
+	}
 
 	for (int i = 0; i < image_list->image_count; i++) {
-		snprintf(string_buffer, 256, "%s/image%d", output_dir, i);
-		imageSave(&image_list->images[i], string_buffer);
+		snprintf(string_buffer, 256, "%s/image%d.png", output_dir, i);
+		if (imageSave(&image_list->images[i], string_buffer) == -1) {
+			fprintf(stderr,"Error on saving images\n");
+			return 1;
+		}
 	}
 
 	imageDeleteList(image_list);
