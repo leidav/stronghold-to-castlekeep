@@ -106,7 +106,6 @@ int tgxDecode(struct Color *pixel, int width, int height, int horizontal_offset,
 					y++;
 					x = 0;
 				} else {
-					fprintf(stderr, "y to large\n");
 					return 0;
 				}
 				break;
