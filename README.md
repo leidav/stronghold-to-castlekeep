@@ -17,6 +17,7 @@ Build:
     make 
 
 ###Usage###
-
-    cd ../bin
-    sh2ck input_file output_dir
+    sh2ck [options] input_file output_dir
+    options:
+    	-h, --help	This help
+    	-t, --tgx	Read a tgx file
