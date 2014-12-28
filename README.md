@@ -17,11 +17,11 @@ Build:
     make 
 
 ###Usage### 
-##Convert##
+####Convert####
 
     ./convert.sh stronghold_dir asset_dir
 
-##sh2ck##
+####sh2ck####
 
     sh2ck [options] input_file output_dir
     options:
