@@ -9,8 +9,6 @@ fi
 stronghold_dir=$1
 asset_dir=$2
 gm_dir="$stronghold_dir/gm"
-gfx_dir="$stronghold_dir/gfx"
-gfx8_dir="$stronghold_dir/gfx8"
 
 if [ ! -e bin/sh2ck ]
 then
@@ -29,8 +27,3 @@ do
 	bin/sh2ck $i "$asset_dir/`basename $i .gm1`"
 done
 
-for i in $gfx_dir/*.tgx $gfx8_dir/*.tgx 
-do
-	echo "Convert: `basename $i .tgx`"
-	bin/sh2ck -t $i "$asset_dir/`basename $i .tgx`"
-done
