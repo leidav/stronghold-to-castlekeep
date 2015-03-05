@@ -28,12 +28,13 @@
 
 static void printHelp(FILE *fp)
 {
-	fprintf(fp, "Usage: sh2ck [options] input_file output_dir\n\n" \
-	            "Convert strongholds gm1 and tgx files to png and json,\n" \
-	            "as needed by castlekeep\n" \
-	            "options:\n" \
-	            "\t-h, --help\t\tThis help\n" \
-	            "\t-t, --tgx\t\tRead a tgx file\n");
+	fprintf(fp,
+	        "Usage: sh2ck [options] input_file output_dir\n\n"
+	        "Convert strongholds gm1 and tgx files to png and json,\n"
+	        "as needed by castlekeep\n"
+	        "options:\n"
+	        "\t-h, --help\t\tThis help\n"
+	        "\t-t, --tgx\t\tRead a tgx file\n");
 }
 
 static int convertTgx(const char *input_file, const char *output_dir)
@@ -48,7 +49,7 @@ static int convertTgx(const char *input_file, const char *output_dir)
 	}
 
 	if (tgxCreateImage(image, tgx->width, tgx->height, tgx->data, tgx->size,
-	                   NULL, 0) == -1) {
+	                   NULL) == -1) {
 		fprintf(stderr, "Error on decoding image\n");
 		return 1;
 	}

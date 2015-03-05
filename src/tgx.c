@@ -81,7 +81,7 @@ void tgxDelete(struct Tgx *tgx)
 }
 
 int tgxDecode(struct Color *pixel, int width, int height, int horizontal_offset,
-              uint8_t *data, int size, uint16_t *palette, int use_palette)
+              uint8_t *data, int size, uint16_t *palette)
 {
 	int x = 0;
 	int y = 0;
@@ -111,7 +111,7 @@ int tgxDecode(struct Color *pixel, int width, int height, int horizontal_offset,
 				break;
 			case TGX_TOKEN_PIXEL_STREAM:
 				for (int j = 0; j < length; j++) {
-					if (use_palette == 0) {
+					if (palette == NULL) {
 						color = data[i];
 						i++;
 						color |= (data[i] << 8);
@@ -134,7 +134,7 @@ int tgxDecode(struct Color *pixel, int width, int height, int horizontal_offset,
 				}
 				break;
 			case TGX_TOKEN_REPEATING_PIXEL:
-				if (use_palette == 0) {
+				if (palette == NULL) {
 					color = data[i];
 					i++;
 					color |= (data[i] << 8);
@@ -179,7 +179,7 @@ int tgxDecode(struct Color *pixel, int width, int height, int horizontal_offset,
 }
 
 int tgxCreateImage(struct Image *image, int width, int height, uint8_t *data,
-                   int size, uint16_t *palette, int use_palette)
+                   int size, uint16_t *palette)
 {
 	image->width = width;
 	image->height = height;
@@ -188,6 +188,5 @@ int tgxCreateImage(struct Image *image, int width, int height, uint8_t *data,
 	if (image->pixel == NULL) {
 		return -1;
 	}
-	return tgxDecode(image->pixel, width, height, 0, data, size, palette,
-	                 use_palette);
+	return tgxDecode(image->pixel, width, height, 0, data, size, palette);
 }

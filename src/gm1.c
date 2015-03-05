@@ -265,8 +265,8 @@ static int decodeTgxAndTile(struct Image *image, struct Gm1ImageHeader *header,
 	imageClear(image, 0x00);
 	if (size > 512) {
 		if (tgxDecode(image->pixel, image->width, image->height,
-		              header->horizontal_offset, data + 512, size - 512, NULL,
-		              0) == -1) {
+		              header->horizontal_offset, data + 512, size - 512,
+		              NULL) == -1) {
 			return -1;
 		}
 	}
@@ -332,7 +332,7 @@ struct ImageList *gm1CreateImageList(struct Gm1 *gm1)
 				                   gm1->image_headers[i].image_width,
 				                   gm1->image_headers[i].image_height,
 				                   gm1->image_data + gm1->image_offset_list[i],
-				                   gm1->image_size_list[i], NULL, 0) == -1) {
+				                   gm1->image_size_list[i], NULL) == -1) {
 					return NULL;
 				}
 			}
@@ -344,8 +344,7 @@ struct ImageList *gm1CreateImageList(struct Gm1 *gm1)
 				                   gm1->image_headers[i].image_height,
 				                   gm1->image_data + gm1->image_offset_list[i],
 				                   gm1->image_size_list[i],
-				                   gm1->palette + 1 * GM1_PALETTE_SIZE,
-				                   1) == -1) {
+				                   gm1->palette + 1 * GM1_PALETTE_SIZE) == -1) {
 					return NULL;
 				}
 			}
