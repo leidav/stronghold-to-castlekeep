@@ -37,6 +37,20 @@
 #define IMAGE_TYPE_TILE
 #define IMAGE_TYPE_OTHER
 
+struct Pos
+{
+	int x;
+	int y;
+};
+
+struct Rect
+{
+	int x;
+	int y;
+	int width;
+	int height;
+};
+
 struct Color
 {
 	uint8_t b;

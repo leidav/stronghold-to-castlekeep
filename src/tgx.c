@@ -80,11 +80,15 @@ void tgxDelete(struct Tgx *tgx)
 	free(tgx);
 }
 
-int tgxDecode(struct Color *pixel, int width, int height, int horizontal_offset,
-              uint8_t *data, int size, uint16_t *palette)
+int tgxDecode(struct Image *image, struct Rect rect, uint8_t *data, int size,
+              uint16_t *palette)
 {
-	int x = 0;
-	int y = 0;
+	int left = rect.x;
+	int right = rect.x + rect.width;
+	int top = rect.y;
+	int bottom = rect.y + rect.height;
+	int x = left;
+	int y = top;
 	int i = 0;
 	int type = 0;
 	int length = 0;
@@ -96,15 +100,15 @@ int tgxDecode(struct Color *pixel, int width, int height, int horizontal_offset,
 		i++;
 		switch (type) {
 			case TGX_TOKEN_NEW_LINE:
-				for (int j = x; j < width; j++) {
-					pixel[y * width + horizontal_offset + j].a = 0x00;
-					pixel[y * width + horizontal_offset + j].r = 0x00;
-					pixel[y * width + horizontal_offset + j].g = 0x00;
-					pixel[y * width + horizontal_offset + j].b = 0x00;
+				for (int j = x; j < right; j++) {
+					image->pixel[y * image->width + j].a = 0x00;
+					image->pixel[y * image->width + j].r = 0x00;
+					image->pixel[y * image->width + j].g = 0x00;
+					image->pixel[y * image->width + j].b = 0x00;
 				}
-				if (y < height - 1) {
+				if (y < bottom - 1) {
 					y++;
-					x = 0;
+					x = left;
 				} else {
 					return 0;
 				}
@@ -119,14 +123,14 @@ int tgxDecode(struct Color *pixel, int width, int height, int horizontal_offset,
 						color = palette[data[i]];
 					}
 					i++;
-					pixel[y * width + horizontal_offset + x].a = 0xFF;
-					pixel[y * width + horizontal_offset + x].r =
+					image->pixel[y * image->width + x].a = 0xFF;
+					image->pixel[y * image->width + x].r =
 					    COLOR_CONVERT_RED(color);
-					pixel[y * width + horizontal_offset + x].g =
+					image->pixel[y * image->width + x].g =
 					    COLOR_CONVERT_GREEN(color);
-					pixel[y * width + horizontal_offset + x].b =
+					image->pixel[y * image->width + x].b =
 					    COLOR_CONVERT_BLUE(color);
-					if (x < width) {
+					if (x < right) {
 						x++;
 					} else {
 						return -1;
@@ -143,14 +147,14 @@ int tgxDecode(struct Color *pixel, int width, int height, int horizontal_offset,
 				}
 				i++;
 				for (int j = 0; j < length; j++) {
-					pixel[y * width + horizontal_offset + x].a = 0xFF;
-					pixel[y * width + horizontal_offset + x].r =
+					image->pixel[y * image->width + x].a = 0xFF;
+					image->pixel[y * image->width + x].r =
 					    COLOR_CONVERT_RED(color);
-					pixel[y * width + horizontal_offset + x].g =
+					image->pixel[y * image->width + x].g =
 					    COLOR_CONVERT_GREEN(color);
-					pixel[y * width + horizontal_offset + x].b =
+					image->pixel[y * image->width + x].b =
 					    COLOR_CONVERT_BLUE(color);
-					if (x < width) {
+					if (x < right) {
 						x++;
 					} else {
 						return -1;
@@ -159,11 +163,11 @@ int tgxDecode(struct Color *pixel, int width, int height, int horizontal_offset,
 				break;
 			case TGX_TOKEN_TRANSPARENT_PIXEL_STRING:
 				for (int j = 0; j < length; j++) {
-					pixel[y * width + horizontal_offset + x].a = 0x00;
-					pixel[y * width + horizontal_offset + x].r = 0x00;
-					pixel[y * width + horizontal_offset + x].g = 0x00;
-					pixel[y * width + horizontal_offset + x].b = 0x00;
-					if (x < width) {
+					image->pixel[y * image->width + x].a = 0x00;
+					image->pixel[y * image->width + x].r = 0x00;
+					image->pixel[y * image->width + x].g = 0x00;
+					image->pixel[y * image->width + x].b = 0x00;
+					if (x < right) {
 						x++;
 					} else {
 						return -1;
@@ -181,6 +185,7 @@ int tgxDecode(struct Color *pixel, int width, int height, int horizontal_offset,
 int tgxCreateImage(struct Image *image, int width, int height, uint8_t *data,
                    int size, uint16_t *palette)
 {
+	struct Rect rect = {0, 0, width, height};
 	image->width = width;
 	image->height = height;
 	image->pixel = malloc(sizeof(*image->pixel) * width * height);
@@ -188,5 +193,5 @@ int tgxCreateImage(struct Image *image, int width, int height, uint8_t *data,
 	if (image->pixel == NULL) {
 		return -1;
 	}
-	return tgxDecode(image->pixel, width, height, 0, data, size, palette);
+	return tgxDecode(image, rect, data, size, palette);
 }

@@ -33,6 +33,7 @@
 
 struct Image;
 struct Color;
+struct Rect;
 
 struct Tgx
 {
@@ -44,11 +45,11 @@ struct Tgx
 
 struct Tgx *tgxCreateFromFile(const char *file);
 
-int tgxDecode(struct Color *pixel, int width, int height, int horizontal_offset,
-              uint8_t *data, int size, uint16_t *palette);
+int tgxDecode(struct Image *image, struct Rect rect, uint8_t *data, int size,
+              uint16_t *palette);
 
-int tgxCreateImage(struct Image *Image, int width, int height, uint8_t *data,
+int tgxCreateImage(struct Image *image, int width, int height, uint8_t *data,
                    int size, uint16_t *palette);
 
-void tgxDelete(struct Tgx *Tgx);
+void tgxDelete(struct Tgx *tgx);
 #endif  // TGX_H

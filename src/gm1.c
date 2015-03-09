@@ -204,17 +204,17 @@ void gm1Delete(struct Gm1 *gm1)
 	free(gm1);
 }
 
-static int decodeTile(struct Image *image, uint8_t *data, int y_pos)
+static int decodeTile(struct Image *image, uint8_t *data, struct Pos offset)
 {
 	int i = 0;
 	int j = 2;
 	int x = 0;
-	int y = y_pos;
+	int y = offset.y;
 	uint16_t color = 0x0;
 
-	while (y < y_pos + GM1_TILE_HEIGHT / 2) {
-		x = GM1_TILE_WIDTH / 2 - j / 2;
-		while (x < GM1_TILE_WIDTH / 2 + j / 2) {
+	while (y < offset.y + GM1_TILE_HEIGHT / 2) {
+		x = offset.x + GM1_TILE_WIDTH / 2 - j / 2;
+		while (x < offset.x + GM1_TILE_WIDTH / 2 + j / 2) {
 			color = data[i];
 			i++;
 			color |= (data[i] << 8);
@@ -230,9 +230,9 @@ static int decodeTile(struct Image *image, uint8_t *data, int y_pos)
 	}
 	j = 30;
 	x = 0;
-	while (y < y_pos + GM1_TILE_HEIGHT) {
-		x = GM1_TILE_WIDTH / 2 - j / 2;
-		while (x < GM1_TILE_WIDTH / 2 + j / 2) {
+	while (y < offset.y + GM1_TILE_HEIGHT) {
+		x = offset.x + GM1_TILE_WIDTH / 2 - j / 2;
+		while (x < offset.x + GM1_TILE_WIDTH / 2 + j / 2) {
 			color = data[i];
 			i++;
 			color |= (data[i] << 8);
@@ -263,15 +263,17 @@ static int decodeTgxAndTile(struct Image *image, struct Gm1ImageHeader *header,
 		return -1;
 	}
 	imageClear(image, 0x00);
+
 	if (size > 512) {
-		if (tgxDecode(image->pixel, image->width, image->height,
-		              header->horizontal_offset, data + 512, size - 512,
-		              NULL) == -1) {
+		struct Rect rect = {header->horizontal_offset, 0,
+		                    header->image_width - header->horizontal_offset,
+		                    header->image_height};
+		if (tgxDecode(image, rect, data + 512, size - 512, NULL) == -1) {
 			return -1;
 		}
 	}
-
-	return decodeTile(image, data, header->tile_position_y);
+	struct Pos offset = {0, header->tile_position_y};
+	return decodeTile(image, data, offset);
 }
 
 static int decodeBitmap(struct Image *image, int width, int height,
