@@ -77,8 +77,8 @@ struct TileObject {
 
 struct TileObjectList {
 	int object_count;
-	struct TileObject *objects;
 	struct ImageList image_list;
+	struct TileObject *objects;
 };
 
 struct AnimationFrame {

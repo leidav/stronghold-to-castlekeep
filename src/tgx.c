@@ -21,39 +21,32 @@
 #include "tgx.h"
 #include "image.h"
 
-struct Tgx *tgxCreateFromFile(const char *file)
+int tgxCreateFromFile(struct Tgx *tgx, const char *file)
 {
 	FILE *fp = fopen(file, "rb");
 
 	if (fp == NULL) {
-		return NULL;
+		return -1;
 	}
 
 	if (fseek(fp, 0, SEEK_END)) {
 		fclose(fp);
-		return NULL;
+		return -1;
 	}
 
 	unsigned int file_size = ftell(fp);
 
 	if (file_size == 0) {
 		fclose(fp);
-		return NULL;
+		return -1;
 	}
 	fseek(fp, 0, SEEK_SET);
-
-	struct Tgx *tgx = malloc(sizeof(*tgx));
-
-	if (tgx == NULL) {
-		fclose(fp);
-		return NULL;
-	}
 
 	if (fread(&tgx->width, sizeof(tgx->width), 1, fp) < 1 ||
 	    fread(&tgx->height, sizeof(tgx->height), 1, fp) < 1) {
 		fclose(fp);
 		tgxDelete(tgx);
-		return NULL;
+		return -1;
 	}
 	tgx->size = file_size - ftell(fp);
 
@@ -61,15 +54,15 @@ struct Tgx *tgxCreateFromFile(const char *file)
 	if (tgx->data == NULL) {
 		fclose(fp);
 		tgxDelete(tgx);
-		return NULL;
+		return -1;
 	}
 
 	if (fread(tgx->data, sizeof(*(tgx->data)), tgx->size, fp) < tgx->size) {
 		fclose(fp);
 		tgxDelete(tgx);
-		return NULL;
+		return -1;
 	}
-	return tgx;
+	return 0;
 }
 
 void tgxDelete(struct Tgx *tgx)

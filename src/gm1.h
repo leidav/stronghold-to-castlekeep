@@ -113,11 +113,12 @@ struct Gm1 {
 	uint8_t *image_data;
 };
 
-struct Gm1 *gm1CreateFromFile(const char *file);
+int gm1CreateFromFile(struct Gm1 *gm1, const char *file);
 
-struct ImageList *gm1CreateImageList(struct Gm1 *Gm1);
+int gm1CreateImageList(struct ImageList *image_list, struct Gm1 *Gm1);
 
-struct TileObjectList *gm1CreateTileObjectList(struct Gm1 *Gm1);
+int gm1CreateTileObjectList(struct TileObjectList *object_list,
+                            struct Gm1 *Gm1);
 
 void gm1Delete(struct Gm1 *Gm1);
 

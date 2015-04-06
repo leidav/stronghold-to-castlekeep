@@ -22,24 +22,22 @@
 #include "gm1.h"
 #include "tgx.h"
 #include "image.h"
-struct Gm1 *gm1CreateFromFile(const char *file)
+int gm1CreateFromFile(struct Gm1 *gm1, const char *file)
 {
 	FILE *fp = fopen(file, "rb");
 	if (fp == NULL) {
-		return NULL;
+		return -1;
 	}
 	if (fseek(fp, 0, SEEK_END)) {
 		fclose(fp);
-		return NULL;
+		return -1;
 	}
 	int file_size = ftell(fp);
 	if (file_size == 0) {
 		fclose(fp);
-		return NULL;
+		return -1;
 	}
 	fseek(fp, 0, SEEK_SET);
-
-	struct Gm1 *gm1 = malloc(sizeof(*gm1));
 
 	/*read gm1 file header*/
 	if (fread(&gm1->header.unknown1, sizeof(gm1->header.unknown1), 1, fp) < 1 ||
@@ -98,7 +96,7 @@ struct Gm1 *gm1CreateFromFile(const char *file)
 	        1) {
 		gm1Delete(gm1);
 		fclose(fp);
-		return NULL;
+		return -1;
 	}
 
 	/* read palette*/
@@ -107,7 +105,7 @@ struct Gm1 *gm1CreateFromFile(const char *file)
 	if (gm1->palette == NULL) {
 		gm1Delete(gm1);
 		fclose(fp);
-		return NULL;
+		return -1;
 	}
 	fread(gm1->palette, sizeof(*gm1->palette),
 	      GM1_PALETTE_SIZE * GM1_PALETTE_COUNT, fp);
@@ -117,7 +115,7 @@ struct Gm1 *gm1CreateFromFile(const char *file)
 	if (gm1->image_offset_list == NULL) {
 		gm1Delete(gm1);
 		fclose(fp);
-		return NULL;
+		return -1;
 	}
 
 	for (unsigned int i = 0; i < gm1->header.image_count; i++) {
@@ -130,7 +128,7 @@ struct Gm1 *gm1CreateFromFile(const char *file)
 	if (gm1->image_size_list == NULL) {
 		gm1Delete(gm1);
 		fclose(fp);
-		return NULL;
+		return -1;
 	}
 	for (unsigned int i = 0; i < gm1->header.image_count; i++) {
 		fread(&gm1->image_size_list[i], sizeof(*(gm1->image_size_list)), 1, fp);
@@ -140,7 +138,7 @@ struct Gm1 *gm1CreateFromFile(const char *file)
 	    malloc(sizeof(*(gm1->image_headers)) * gm1->header.image_count);
 	if (gm1->image_headers == NULL) {
 		gm1Delete(gm1);
-		return NULL;
+		return -1;
 	}
 
 	for (unsigned int i = 0; i < gm1->header.image_count; i++) {
@@ -169,7 +167,7 @@ struct Gm1 *gm1CreateFromFile(const char *file)
 		          sizeof(gm1->image_headers[i].performance_id), 1, fp) < 1) {
 			gm1Delete(gm1);
 			fclose(fp);
-			return NULL;
+			return -1;
 		}
 	}
 
@@ -178,7 +176,7 @@ struct Gm1 *gm1CreateFromFile(const char *file)
 	if (gm1->image_data == NULL) {
 		gm1Delete(gm1);
 		fclose(fp);
-		return NULL;
+		return -1;
 	}
 
 	if (file_size - file_position < gm1->header.data_size ||
@@ -186,10 +184,10 @@ struct Gm1 *gm1CreateFromFile(const char *file)
 	          file_size - file_position, fp) < file_size - file_position) {
 		gm1Delete(gm1);
 		fclose(fp);
-		return NULL;
+		return -1;
 	}
 
-	return gm1;
+	return 0;
 }
 
 void gm1Delete(struct Gm1 *gm1)
@@ -201,7 +199,6 @@ void gm1Delete(struct Gm1 *gm1)
 		free(gm1->image_headers);
 		free(gm1->image_data);
 	}
-	free(gm1);
 }
 
 static int decodeTile(struct Image *image, uint8_t *data, struct Pos *offset)
@@ -297,19 +294,8 @@ static int decodeBitmap(struct Image *image, int width, int height,
 	return 0;
 }
 
-struct TileObjectList *gm1CreateTileObjectList(struct Gm1 *gm1)
+int gm1CreateTileObjectList(struct TileObjectList *object_list, struct Gm1 *gm1)
 {
-	struct TileObjectList *object_list = NULL;
-
-	if (gm1 == NULL) {
-		return 0;
-	}
-
-	object_list = malloc(sizeof(*object_list));
-
-	if (object_list == NULL) {
-		return NULL;
-	}
 	int object_count = 0;
 
 	for (int i = 0; i < gm1->header.image_count; i++) {
@@ -321,7 +307,7 @@ struct TileObjectList *gm1CreateTileObjectList(struct Gm1 *gm1)
 	if (tileObjectCreateList(object_list, object_count)) {
 		tileObjectDeleteList(object_list);
 		free(object_list);
-		return NULL;
+		return -1;
 	}
 
 	int i = 0;
@@ -343,7 +329,7 @@ struct TileObjectList *gm1CreateTileObjectList(struct Gm1 *gm1)
 		if (tileObjectCreate(&object_list->objects[j], part_count)) {
 			tileObjectDeleteList(object_list);
 			free(object_list);
-			return NULL;
+			return -1;
 		}
 
 		while (part < part_count) {
@@ -382,7 +368,7 @@ struct TileObjectList *gm1CreateTileObjectList(struct Gm1 *gm1)
 		                image_height)) {
 			tileObjectDeleteList(object_list);
 			free(object_list);
-			return NULL;
+			return -1;
 		}
 		j++;
 	}
@@ -402,35 +388,23 @@ struct TileObjectList *gm1CreateTileObjectList(struct Gm1 *gm1)
 			                     gm1->image_size_list[k])) {
 				tileObjectDeleteList(object_list);
 				free(object_list);
-				return NULL;
+				return -1;
 			}
 			k++;
 		}
 	}
 
-	return object_list;
+	return 0;
 }
 
-struct ImageList *gm1CreateImageList(struct Gm1 *gm1)
+int gm1CreateImageList(struct ImageList *image_list, struct Gm1 *gm1)
 {
-	struct ImageList *image_list = NULL;
-
-	if (gm1 == NULL) {
-		return 0;
-	}
-
-	image_list = malloc(sizeof(*image_list));
-
-	if (image_list == NULL) {
-		return NULL;
-	}
 	image_list->image_count = gm1->header.image_count;
 	image_list->images =
 	    malloc(sizeof(*(image_list->images)) * gm1->header.image_count);
 	if (image_list->images == NULL) {
 		imageDeleteList(image_list);
-		free(image_list);
-		return NULL;
+		return -1;
 	}
 
 	switch (gm1->header.data_type) {
@@ -444,8 +418,7 @@ struct ImageList *gm1CreateImageList(struct Gm1 *gm1)
 				                   gm1->image_data + gm1->image_offset_list[i],
 				                   gm1->image_size_list[i], NULL) == -1) {
 					imageDeleteList(image_list);
-					free(image_list);
-					return NULL;
+					return -1;
 				}
 			}
 			break;
@@ -458,8 +431,7 @@ struct ImageList *gm1CreateImageList(struct Gm1 *gm1)
 				                   gm1->image_size_list[i],
 				                   gm1->palette + 1 * GM1_PALETTE_SIZE) == -1) {
 					imageDeleteList(image_list);
-					free(image_list);
-					return NULL;
+					return -1;
 				}
 			}
 			break;
@@ -472,16 +444,14 @@ struct ImageList *gm1CreateImageList(struct Gm1 *gm1)
 				                 gm1->image_data + gm1->image_offset_list[i],
 				                 gm1->image_size_list[i]) == -1) {
 					imageDeleteList(image_list);
-					free(image_list);
-					return NULL;
+					return -1;
 				}
 			}
 			break;
 		default:
 			imageDeleteList(image_list);
-			free(image_list);
-			return NULL;
+			return -1;
 			break;
 	}
-	return image_list;
+	return 0;
 }

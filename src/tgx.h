@@ -42,7 +42,7 @@ struct Tgx {
 	uint8_t *data;
 };
 
-struct Tgx *tgxCreateFromFile(const char *file);
+int tgxCreateFromFile(struct Tgx *tgx, const char *file);
 
 int tgxDecode(struct Image *image, struct Rect *rect, uint8_t *data, int size,
               uint16_t *palette);
