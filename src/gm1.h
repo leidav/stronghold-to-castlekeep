@@ -49,8 +49,7 @@
 #define GM1_TILE_WIDTH 30
 #define GM1_TILE_HEIGHT 16
 
-struct Gm1FileHeader
-{
+struct Gm1FileHeader {
 	uint32_t unknown1;
 	uint32_t unknown2;
 	uint32_t unknown3;
@@ -90,8 +89,7 @@ struct Gm1FileHeader
 	uint32_t unknown18;
 };
 
-struct Gm1ImageHeader
-{
+struct Gm1ImageHeader {
 	uint16_t image_width;
 	uint16_t image_height;
 	uint16_t position_x;
@@ -105,8 +103,7 @@ struct Gm1ImageHeader
 	uint8_t performance_id;
 };
 
-struct Gm1
-{
+struct Gm1 {
 	struct Gm1FileHeader header;
 	/* 10*256 colors */
 	uint16_t *palette;
@@ -119,6 +116,8 @@ struct Gm1
 struct Gm1 *gm1CreateFromFile(const char *file);
 
 struct ImageList *gm1CreateImageList(struct Gm1 *Gm1);
+
+struct TileObjectList *gm1CreateTileObjectList(struct Gm1 *Gm1);
 
 void gm1Delete(struct Gm1 *Gm1);
 

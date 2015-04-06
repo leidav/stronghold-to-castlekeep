@@ -29,13 +29,13 @@ endif()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
 
-set(CMAKE_C_FLAGS "-std=c99")
+set(CMAKE_C_FLAGS "-std=c99 -Werror -Wall")
 
 find_package(PNG REQUIRED)
 
 include_directories(${PNG_INCLUDE_DIR})
 
-set(LIBRARIES ${PNG_LIBRARIES})
+set(LIBRARIES m ${PNG_LIBRARIES})
 
 include_directories(${CMAKE_SOURCE_DIR}/src)
 

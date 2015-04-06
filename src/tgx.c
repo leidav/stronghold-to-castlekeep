@@ -80,13 +80,13 @@ void tgxDelete(struct Tgx *tgx)
 	free(tgx);
 }
 
-int tgxDecode(struct Image *image, struct Rect rect, uint8_t *data, int size,
+int tgxDecode(struct Image *image, struct Rect *rect, uint8_t *data, int size,
               uint16_t *palette)
 {
-	int left = rect.x;
-	int right = rect.x + rect.width;
-	int top = rect.y;
-	int bottom = rect.y + rect.height;
+	int left = rect->x;
+	int right = rect->x + rect->width;
+	int top = rect->y;
+	int bottom = rect->y + rect->height;
 	int x = left;
 	int y = top;
 	int i = 0;
@@ -186,12 +186,8 @@ int tgxCreateImage(struct Image *image, int width, int height, uint8_t *data,
                    int size, uint16_t *palette)
 {
 	struct Rect rect = {0, 0, width, height};
-	image->width = width;
-	image->height = height;
-	image->pixel = malloc(sizeof(*image->pixel) * width * height);
-
-	if (image->pixel == NULL) {
+	if (imageCreate(image, width, height)) {
 		return -1;
 	}
-	return tgxDecode(image, rect, data, size, palette);
+	return tgxDecode(image, &rect, data, size, palette);
 }

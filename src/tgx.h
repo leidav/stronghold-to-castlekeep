@@ -28,15 +28,14 @@
 #define TGX_TOKEN_MASK_TYPE 0xE0
 #define TGX_TOKEN_MASK_VALUE 0x1F
 
-#define TGX_GET_TOKEN_TYPE(t) ((int)(t) & TGX_TOKEN_MASK_TYPE)
+#define TGX_GET_TOKEN_TYPE(t) ((int)(t)&TGX_TOKEN_MASK_TYPE)
 #define TGX_GET_TOKEN_VALUE(t) ((int)((t)&TGX_TOKEN_MASK_VALUE))
 
 struct Image;
 struct Color;
 struct Rect;
 
-struct Tgx
-{
+struct Tgx {
 	uint32_t width;
 	uint32_t height;
 	int size;
@@ -45,7 +44,7 @@ struct Tgx
 
 struct Tgx *tgxCreateFromFile(const char *file);
 
-int tgxDecode(struct Image *image, struct Rect rect, uint8_t *data, int size,
+int tgxDecode(struct Image *image, struct Rect *rect, uint8_t *data, int size,
               uint16_t *palette);
 
 int tgxCreateImage(struct Image *image, int width, int height, uint8_t *data,

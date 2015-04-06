@@ -69,14 +69,22 @@ static int convertTgx(const char *input_file, const char *output_dir)
 static int convertGm1(const char *input_file, const char *output_dir)
 {
 	char string_buffer[256];
-	struct ImageList *image_list;
+	struct ImageList *image_list = NULL;
+	struct TileObjectList *object_list = NULL;
 	struct Gm1 *gm1 = gm1CreateFromFile(input_file);
 	if (gm1 == NULL) {
 		fprintf(stderr, "Error on loading file\n");
 		return 1;
 	}
 
-	image_list = gm1CreateImageList(gm1);
+	if (gm1->header.data_type == GM1_DATA_TGX_AND_TILE) {
+		object_list = gm1CreateTileObjectList(gm1);
+		if (object_list != NULL) {
+			image_list = &object_list->image_list;
+		}
+	} else {
+		image_list = gm1CreateImageList(gm1);
+	}
 	if (image_list == NULL) {
 		fprintf(stderr, "Error on decoding image\n");
 		return 1;
@@ -89,8 +97,13 @@ static int convertGm1(const char *input_file, const char *output_dir)
 			return 1;
 		}
 	}
-
-	imageDeleteList(image_list);
+	if(gm1->header.data_type != GM1_DATA_TGX_AND_TILE) {
+		imageDeleteList(image_list);
+		free(image_list);
+	}else {
+		tileObjectDeleteList(object_list);
+		free(object_list);
+	}
 	gm1Delete(gm1);
 
 	return 0;

@@ -81,7 +81,6 @@ void imageDelete(struct Image *image)
 	if (image != NULL) {
 		free(image->pixel);
 	}
-	free(image);
 }
 
 void imageDeleteList(struct ImageList *image_list)
@@ -92,5 +91,80 @@ void imageDeleteList(struct ImageList *image_list)
 		}
 		free(image_list->images);
 	}
-	free(image_list);
+}
+
+void tileObjectDelete(struct TileObject *object)
+{
+	if (object != NULL) {
+		free(object->parts);
+	}
+}
+
+void tileObjectDeleteList(struct TileObjectList *object_list)
+{
+	if (object_list != NULL) {
+		for (int i = 0; i < object_list->object_count; i++) {
+			free(object_list->objects[i].parts);
+		}
+		free(object_list->objects);
+		imageDeleteList(&object_list->image_list);
+	}
+}
+
+int imageCreate(struct Image *image, int width, int height)
+{
+	image->width = width;
+	image->height = height;
+	image->pixel = malloc(sizeof(*image->pixel) * width * height);
+
+	if (image->pixel == NULL) {
+		return -1;
+	}
+	return 0;
+}
+
+int imageCreateList(struct ImageList *image_list, int count)
+{
+	image_list->image_count = count;
+	image_list->images = malloc(sizeof(*image_list->images) * count);
+
+	if (image_list->images == NULL) {
+		return -1;
+	}
+	for (int i = 0; i < count; i++) {
+		image_list->images[i].pixel = NULL;
+	}
+	return 0;
+}
+
+int tileObjectCreate(struct TileObject *object, int part_count)
+{
+	object->part_count = part_count;
+	object->parts = malloc(sizeof(*object->parts) * part_count);
+
+	if (object->parts == NULL) {
+		return -1;
+	}
+	return 0;
+}
+
+int tileObjectCreateList(struct TileObjectList *objects_list, int count)
+{
+	objects_list->object_count = count;
+
+	if (imageCreateList(&objects_list->image_list, count)) {
+		return -1;
+	}
+
+	objects_list->objects = malloc(sizeof(*objects_list->objects) * count);
+
+	if (objects_list->objects == NULL) {
+		imageDeleteList(&objects_list->image_list);
+		return -1;
+	}
+
+	for (int i = 0; i < count; i++) {
+		objects_list->objects[i].parts = NULL;
+	}
+	return 0;
 }
