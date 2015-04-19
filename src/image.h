@@ -88,9 +88,8 @@ struct AnimationFrame {
 
 struct Animation {
 	int frame_count;
-	int fps;
+	struct ImageList image_list;
 	struct AnimationFrame *frames;
-	struct Image *images;
 };
 
 uint16_t imageGetColor16Bit(uint8_t *data);
@@ -111,7 +110,9 @@ int tileObjectCreate(struct TileObject *object, int part_count);
 
 void tileObjectDelete(struct TileObject *object);
 
-int tileObjectCreateList(struct TileObjectList *objects_list, int count);
+int tileObjectCreateList(struct TileObjectList *object_list, int count);
+
+int tileObjectSaveData(struct TileObjectList *object_list, const char *file);
 
 void tileObjectDeleteList(struct TileObjectList *object_list);
 

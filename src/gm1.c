@@ -65,11 +65,9 @@ int gm1CreateFromFile(struct Gm1 *gm1, const char *file)
 
 	    fread(&gm1->header.unknown9, sizeof(gm1->header.unknown9), 1, fp) < 1 ||
 
-	    fread(&gm1->header.unknown10, sizeof(gm1->header.unknown10), 1, fp) <
-	        1 ||
+	    fread(&gm1->header.width, sizeof(gm1->header.width), 1, fp) < 1 ||
 
-	    fread(&gm1->header.unknown11, sizeof(gm1->header.unknown11), 1, fp) <
-	        1 ||
+	    fread(&gm1->header.height, sizeof(gm1->header.height), 1, fp) < 1 ||
 
 	    fread(&gm1->header.unknown12, sizeof(gm1->header.unknown12), 1, fp) <
 	        1 ||
@@ -83,11 +81,9 @@ int gm1CreateFromFile(struct Gm1 *gm1, const char *file)
 	    fread(&gm1->header.unknown15, sizeof(gm1->header.unknown15), 1, fp) <
 	        1 ||
 
-	    fread(&gm1->header.unknown16, sizeof(gm1->header.unknown16), 1, fp) <
-	        1 ||
+	    fread(&gm1->header.center_x, sizeof(gm1->header.center_x), 1, fp) < 1 ||
 
-	    fread(&gm1->header.unknown17, sizeof(gm1->header.unknown17), 1, fp) <
-	        1 ||
+	    fread(&gm1->header.center_y, sizeof(gm1->header.center_y), 1, fp) < 1 ||
 
 	    fread(&gm1->header.data_size, sizeof(gm1->header.data_size), 1, fp) <
 	        1 ||
@@ -375,6 +371,7 @@ int gm1CreateTileObjectList(struct TileObjectList *object_list, struct Gm1 *gm1)
 
 	int k = 0;
 	for (j = 0; j < object_list->object_count; j++) {
+		imageClear(&object_list->image_list.images[j], 0x00);
 		for (i = 0; i < object_list->objects[j].part_count; i++) {
 			object_list->objects[j].parts[i].rect.y =
 			    (object_list->image_list.images[j].height -
@@ -453,5 +450,76 @@ int gm1CreateImageList(struct ImageList *image_list, struct Gm1 *gm1)
 			return -1;
 			break;
 	}
+	return 0;
+}
+
+int gm1SaveHeader(struct Gm1 *gm1, const char *file)
+{
+	FILE *fp = fopen(file, "w");
+	if (fp == NULL) {
+		return -1;
+	}
+	const static char *data_type_lookup[] = {"TGX", "ANIMATION", "TGX_AND_TILE",
+	                                         "TGX_FONT", "BITMAP",
+	                                         "TGX_CONST_SIZE", "BITMAP_OTHER"};
+	const static char *size_type_lookup[] = {
+	    "UNDEFINDED", "30x30",   "55x55",   "75x75",
+	    "UNKNOWN_4",  "100x100", "110x110", "130x130",
+	    "UNKNOWN_8",  "185x185", "250x250", "180x180"};
+	fprintf(fp,
+	        "{\n\"unknown1\": %d,\n"
+	        "  \"uint32_unknown2\": %d,\n"
+	        "  \"uint32_unknown3\": %d,\n"
+	        "  \"image_count\": %d,\n"
+	        "  \"uint32_unknown4\": %d,\n"
+	        "  \"data_type\": \"%s\",\n"
+	        "  \"uint32_unknown5\": %d,\n"
+	        "  \"uint32_unknown6\": %d,\n"
+	        "  \"size_type\": \"%s\",\n"
+	        "  \"uint32_unknown7\": %d,\n"
+	        "  \"uint32_unknown8\": %d,\n"
+	        "  \"uint32_unknown9\": %d,\n"
+	        "  \"width\": %d,\n"
+	        "  \"height\": %d,\n"
+	        "  \"uint32_unknown12\": %d,\n"
+	        "  \"uint32_unknown13\": %d,\n"
+	        "  \"uint32_unknown14\": %d,\n"
+	        "  \"uint32_unknown15\": %d,\n"
+	        "  \"center_x\": %d,\n"
+	        "  \"center_y\": %d,\n"
+	        "  \"data_size\": %d,\n"
+	        "  \"uint32_unknown18\": %d\n}\n",
+	        gm1->header.unknown1, gm1->header.unknown2, gm1->header.unknown3,
+	        gm1->header.image_count, gm1->header.unknown4,
+	        data_type_lookup[gm1->header.data_type - 1], gm1->header.unknown5,
+	        gm1->header.unknown6, size_type_lookup[gm1->header.size_type],
+	        gm1->header.unknown7, gm1->header.unknown8, gm1->header.unknown9,
+	        gm1->header.width, gm1->header.height, gm1->header.unknown12,
+	        gm1->header.unknown13, gm1->header.unknown14, gm1->header.unknown15,
+	        gm1->header.center_x, gm1->header.center_y, gm1->header.data_size,
+	        gm1->header.unknown18);
+	fclose(fp);
+	return 0;
+}
+
+int gm1IsTileObject(struct Gm1 *gm1)
+{
+	return gm1->header.data_type == GM1_DATA_TGX_AND_TILE;
+}
+
+int gm1IsAnimation(struct Gm1 *gm1)
+{
+	return gm1->header.data_type == GM1_DATA_ANIMATION ||
+	       gm1->header.data_type == GM1_DATA_TGX_CONST_SIZE;
+}
+
+int gm1SavePalette(struct Gm1 *gm1, const char *file)
+{
+	FILE *fp = fopen(file, "w");
+	if (fp == NULL) {
+		return -1;
+	}
+	fwrite(gm1->palette, GM1_PALETTE_SIZE, GM1_PALETTE_COUNT, fp);
+	fclose(fp);
 	return 0;
 }

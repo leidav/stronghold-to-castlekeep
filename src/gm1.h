@@ -72,16 +72,16 @@ struct Gm1FileHeader {
 	uint32_t unknown9;
 
 	/*maybe x size of images*/
-	uint32_t unknown10;
+	uint32_t width;
 	/*maybe y size of images*/
-	uint32_t unknown11;
+	uint32_t height;
 
 	uint32_t unknown12;
 	uint32_t unknown13;
 	uint32_t unknown14;
 	uint32_t unknown15;
-	uint32_t unknown16;
-	uint32_t unknown17;
+	uint32_t center_x;
+	uint32_t center_y;
 
 	/*The size of file left to read in uint8_ts.*/
 	uint32_t data_size;
@@ -113,6 +113,8 @@ struct Gm1 {
 	uint8_t *image_data;
 };
 
+int gm1SaveHeader(struct Gm1 *gm1, const char *file);
+
 int gm1CreateFromFile(struct Gm1 *gm1, const char *file);
 
 int gm1CreateImageList(struct ImageList *image_list, struct Gm1 *Gm1);
@@ -121,5 +123,11 @@ int gm1CreateTileObjectList(struct TileObjectList *object_list,
                             struct Gm1 *Gm1);
 
 void gm1Delete(struct Gm1 *Gm1);
+
+int gm1IsTileObject(struct Gm1 *gm1);
+
+int gm1IsAnimation(struct Gm1 *gm1);
+
+int gm1SavePalette(struct Gm1 *gm1, const char *file);
 
 #endif  // GM1_H

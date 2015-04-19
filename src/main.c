@@ -26,6 +26,11 @@
 #include "tgx.h"
 #include "image.h"
 
+struct Options {
+	int convert_tgx;
+	int save_header;
+};
+
 static void printHelp(FILE *fp)
 {
 	fprintf(fp,
@@ -34,10 +39,11 @@ static void printHelp(FILE *fp)
 	        "as needed by castlekeep\n"
 	        "options:\n"
 	        "\t-h, --help\t\tThis help\n"
-	        "\t-t, --tgx\t\tRead a tgx file\n");
+	        "\t-t, --tgx\t\tRead a tgx file\n"
+	        "\t--header\t\tSave gm1 file header\n");
 }
 
-static int saveImageList(struct ImageList *image_list, const char *output_dir)
+static int saveImages(struct ImageList *image_list, const char *output_dir)
 {
 	char string_buffer[256];
 	for (int i = 0; i < image_list->image_count; i++) {
@@ -50,12 +56,29 @@ static int saveImageList(struct ImageList *image_list, const char *output_dir)
 	return 0;
 }
 
+static int saveHeader(struct Gm1 *gm1, const char *output_dir)
+{
+	char string_buffer[256];
+	snprintf(string_buffer, 256, "%s/gm1.json", output_dir);
+	gm1SaveHeader(gm1, string_buffer);
+	return 0;
+}
+
+static int saveTileObjectData(struct TileObjectList *list,
+                              const char *output_dir)
+{
+	char string_buffer[256];
+	snprintf(string_buffer, 256, "%s/data.json", output_dir);
+	tileObjectSaveData(list, string_buffer);
+	return 0;
+}
+
 static int convertTgx(const char *input_file, const char *output_dir)
 {
 	char string_buffer[256];
 	struct Image image;
-
 	struct Tgx tgx;
+
 	if (tgxCreateFromFile(&tgx, input_file) == -1) {
 		fprintf(stderr, "Error on loading file\n");
 		return 1;
@@ -64,12 +87,15 @@ static int convertTgx(const char *input_file, const char *output_dir)
 	if (tgxCreateImage(&image, tgx.width, tgx.height, tgx.data, tgx.size,
 	                   NULL) == -1) {
 		fprintf(stderr, "Error on decoding image\n");
+		tgxDelete(&tgx);
 		return 1;
 	}
 
 	snprintf(string_buffer, 256, "%s/image0.png", output_dir);
 	if (imageSave(&image, string_buffer) == -1) {
 		fprintf(stderr, "Error on saving images\n");
+		tgxDelete(&tgx);
+		imageDelete(&image);
 		return 1;
 	}
 
@@ -79,23 +105,36 @@ static int convertTgx(const char *input_file, const char *output_dir)
 	return 0;
 }
 
-static int convertGm1(const char *input_file, const char *output_dir)
+static int convertGm1(const char *input_file, const char *output_dir,
+                      struct Options *options)
 {
 	struct ImageList image_list;
 	struct TileObjectList object_list;
 	struct Gm1 *gm1 = malloc(sizeof(*gm1));
+
 	if (gm1CreateFromFile(gm1, input_file) == -1) {
 		fprintf(stderr, "Error on loading file\n");
 		return 1;
 	}
 
-	if (gm1->header.data_type == GM1_DATA_TGX_AND_TILE) {
+	if (gm1IsTileObject(gm1)) {
 		if (gm1CreateTileObjectList(&object_list, gm1) == -1) {
 			fprintf(stderr, "Error on decoding image\n");
 			gm1Delete(gm1);
 			return 1;
 		}
-		saveImageList(&object_list.image_list, output_dir);
+		if (saveImages(&object_list.image_list, output_dir) == -1) {
+			fprintf(stderr, "Error on saving images\n");
+			tileObjectDeleteList(&object_list);
+			gm1Delete(gm1);
+			return 1;
+		}
+		if (saveTileObjectData(&object_list, output_dir) == -1) {
+			fprintf(stderr, "Error on saving data\n");
+			tileObjectDeleteList(&object_list);
+			gm1Delete(gm1);
+			return 1;
+		}
 		tileObjectDeleteList(&object_list);
 
 	} else {
@@ -104,10 +143,24 @@ static int convertGm1(const char *input_file, const char *output_dir)
 			gm1Delete(gm1);
 			return 1;
 		}
-		saveImageList(&image_list, output_dir);
+		if (saveImages(&image_list, output_dir) == -1) {
+			fprintf(stderr, "Error on saving images\n");
+			imageDeleteList(&image_list);
+			gm1Delete(gm1);
+			return 1;
+		}
 		imageDeleteList(&image_list);
 	}
+	if (options->save_header == 1) {
+		if (saveHeader(gm1, output_dir) == -1) {
+			fprintf(stderr, "Error on saving data\n");
+			gm1Delete(gm1);
+			free(gm1);
+			return 1;
+		}
+	}
 	gm1Delete(gm1);
+	free(gm1);
 
 	return 0;
 }
@@ -116,7 +169,8 @@ int main(int argc, char *argv[])
 {
 	const char *input_file = NULL;
 	const char *output_dir = NULL;
-	int convert_tgx = 0;
+	struct Options options;
+	memset(&options, 0x0, sizeof(struct Options));
 
 	for (int i = 1; i < argc; i++) {
 		if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
@@ -125,7 +179,11 @@ int main(int argc, char *argv[])
 		}
 
 		if (strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--tgx") == 0) {
-			convert_tgx = 1;
+			options.convert_tgx = 1;
+		}
+
+		if (strcmp(argv[i], "--header") == 0) {
+			options.save_header = 1;
 		}
 	}
 
@@ -133,6 +191,7 @@ int main(int argc, char *argv[])
 		printHelp(stderr);
 		return 1;
 	}
+
 	input_file = argv[argc - 2];
 	output_dir = argv[argc - 1];
 
@@ -141,9 +200,9 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	if (convert_tgx == 1) {
+	if (options.convert_tgx == 1) {
 		return convertTgx(input_file, output_dir);
 	} else {
-		return convertGm1(input_file, output_dir);
+		return convertGm1(input_file, output_dir, &options);
 	}
 }

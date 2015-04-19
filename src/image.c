@@ -168,3 +168,73 @@ int tileObjectCreateList(struct TileObjectList *objects_list, int count)
 	}
 	return 0;
 }
+
+static void writeTileParts(FILE *fp, struct TilePart *parts, int count)
+{
+	for (int i = 0; i < count; i++) {
+		fprintf(fp,
+		        "        {\n"
+		        "          \"id\": %d,\n"
+		        "          \"x\": %d,\n"
+		        "          \"y\": %d,\n"
+		        "          \"rect\": {\n"
+		        "            \"x\": %d,\n"
+		        "            \"y\": %d,\n"
+		        "            \"width\": %d,\n"
+		        "            \"height\": %d\n"
+		        "          }\n",
+		        parts[i].id, parts[i].x, parts[i].y, parts[i].rect.x,
+		        parts[i].rect.y, parts[i].rect.width, parts[i].rect.height);
+		if (i < count - 1) {
+			fputs("        },\n", fp);
+		} else {
+			fputs("        }\n", fp);
+		}
+	}
+}
+
+static void writeObjects(FILE *fp, struct TileObjectList *object_list)
+{
+	for (int i = 0; i < object_list->object_count; i++) {
+		fprintf(fp,
+		        "    {\n"
+		        "      \"width\": %d,\n"
+		        "      \"heigth\": %d,\n"
+		        "      \"part_count\": %d,\n"
+		        "      \"parts\": [\n",
+		        object_list->image_list.images[i].width,
+		        object_list->image_list.images[i].height,
+		        object_list->objects[i].part_count);
+		writeTileParts(fp, object_list->objects[i].parts,
+		               object_list->objects[i].part_count);
+		fputs("      ]\n", fp);
+		if (i < object_list->object_count - 1) {
+			fputs("    },\n", fp);
+		} else {
+			fputs("    }\n", fp);
+		}
+	}
+}
+
+int tileObjectSaveData(struct TileObjectList *object_list, const char *file)
+{
+	FILE *fp = fopen(file, "w");
+	if (fp == NULL) {
+		return -1;
+	}
+
+	fprintf(fp,
+	        "{\n"
+	        "  \"object_count\": %d,\n"
+	        "  \"objects\": [\n",
+	        object_list->object_count);
+	writeObjects(fp, object_list);
+	fputs(
+	    "  ]\n"
+	    "}\n",
+	    fp);
+
+	fclose(fp);
+
+	return 0;
+}
