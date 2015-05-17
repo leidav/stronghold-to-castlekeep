@@ -20,6 +20,23 @@
 
 #include "image.h"
 
+uint16_t imageGetColor16Bit(uint8_t *data)
+{
+	return (*data) | (*(data + 1) << 8);
+}
+
+int imageCreate(struct Image *image, int width, int height)
+{
+	image->width = width;
+	image->height = height;
+	image->pixel = malloc(sizeof(*image->pixel) * width * height);
+
+	if (image->pixel == NULL) {
+		return -1;
+	}
+	return 0;
+}
+
 int imageSave(struct Image *image, const char *file)
 {
 	FILE *fp = fopen(file, "wb");
@@ -64,11 +81,6 @@ int imageSave(struct Image *image, const char *file)
 	return 0;
 }
 
-uint16_t imageGetColor16Bit(uint8_t *data)
-{
-	return (*data) | (*(data + 1) << 8);
-}
-
 void imageClear(struct Image *image, uint32_t color)
 {
 	for (int i = 0; i < image->width * image->height; i++) {
@@ -83,6 +95,37 @@ void imageDelete(struct Image *image)
 	}
 }
 
+int imageCreateList(struct ImageList *image_list, int count, int type)
+{
+	image_list->image_count = count;
+	image_list->type = type;
+	image_list->images = malloc(sizeof(*image_list->images) * count);
+
+	if (image_list->images == NULL) {
+		return -1;
+	}
+
+	if (type == IMAGE_TYPE_TILE) {
+		image_list->data = malloc(sizeof(struct TileObjectList));
+		if (image_list->data == NULL) {
+			free(image_list->images);
+			return -1;
+		}
+		if (tileObjectCreateList(image_list->data, count)) {
+			free(image_list->data);
+			free(image_list->images);
+			return -1;
+		}
+	} else {
+		image_list->data = NULL;
+	}
+
+	for (int i = 0; i < count; i++) {
+		image_list->images[i].pixel = NULL;
+	}
+	return 0;
+}
+
 void imageDeleteList(struct ImageList *image_list)
 {
 	if (image_list != NULL) {
@@ -90,51 +133,13 @@ void imageDeleteList(struct ImageList *image_list)
 			free(image_list->images[i].pixel);
 		}
 		free(image_list->images);
-	}
-}
-
-void tileObjectDelete(struct TileObject *object)
-{
-	if (object != NULL) {
-		free(object->parts);
-	}
-}
-
-void tileObjectDeleteList(struct TileObjectList *object_list)
-{
-	if (object_list != NULL) {
-		for (int i = 0; i < object_list->object_count; i++) {
-			free(object_list->objects[i].parts);
+		if (image_list->data != NULL) {
+			if (image_list->type == IMAGE_TYPE_TILE) {
+				tileObjectDeleteList(image_list->data);
+			}
+			free(image_list->data);
 		}
-		free(object_list->objects);
-		imageDeleteList(&object_list->image_list);
 	}
-}
-
-int imageCreate(struct Image *image, int width, int height)
-{
-	image->width = width;
-	image->height = height;
-	image->pixel = malloc(sizeof(*image->pixel) * width * height);
-
-	if (image->pixel == NULL) {
-		return -1;
-	}
-	return 0;
-}
-
-int imageCreateList(struct ImageList *image_list, int count)
-{
-	image_list->image_count = count;
-	image_list->images = malloc(sizeof(*image_list->images) * count);
-
-	if (image_list->images == NULL) {
-		return -1;
-	}
-	for (int i = 0; i < count; i++) {
-		image_list->images[i].pixel = NULL;
-	}
-	return 0;
 }
 
 int tileObjectCreate(struct TileObject *object, int part_count)
@@ -148,18 +153,19 @@ int tileObjectCreate(struct TileObject *object, int part_count)
 	return 0;
 }
 
+void tileObjectDelete(struct TileObject *object)
+{
+	if (object != NULL) {
+		free(object->parts);
+	}
+}
+
 int tileObjectCreateList(struct TileObjectList *objects_list, int count)
 {
 	objects_list->object_count = count;
-
-	if (imageCreateList(&objects_list->image_list, count)) {
-		return -1;
-	}
-
 	objects_list->objects = malloc(sizeof(*objects_list->objects) * count);
 
 	if (objects_list->objects == NULL) {
-		imageDeleteList(&objects_list->image_list);
 		return -1;
 	}
 
@@ -193,17 +199,19 @@ static void writeTileParts(FILE *fp, struct TilePart *parts, int count)
 	}
 }
 
-static void writeObjects(FILE *fp, struct TileObjectList *object_list)
+static void writeObjects(FILE *fp, struct ImageList *image_list)
 {
-	for (int i = 0; i < object_list->object_count; i++) {
+	struct TileObjectList *object_list =
+	    (struct TileObjectList *)image_list->data;
+	for (int i = 0; i < image_list->image_count; i++) {
 		fprintf(fp,
 		        "    {\n"
+		        "      \"id\": %d,\n"
 		        "      \"width\": %d,\n"
 		        "      \"heigth\": %d,\n"
 		        "      \"part_count\": %d,\n"
 		        "      \"parts\": [\n",
-		        object_list->image_list.images[i].width,
-		        object_list->image_list.images[i].height,
+		        i, image_list->images[i].width, image_list->images[i].height,
 		        object_list->objects[i].part_count);
 		writeTileParts(fp, object_list->objects[i].parts,
 		               object_list->objects[i].part_count);
@@ -216,8 +224,12 @@ static void writeObjects(FILE *fp, struct TileObjectList *object_list)
 	}
 }
 
-int tileObjectSaveData(struct TileObjectList *object_list, const char *file)
+int tileObjectSaveData(struct ImageList *image_list, const char *file)
 {
+	if (image_list->type != IMAGE_TYPE_TILE) {
+		return -1;
+	}
+
 	FILE *fp = fopen(file, "w");
 	if (fp == NULL) {
 		return -1;
@@ -227,8 +239,8 @@ int tileObjectSaveData(struct TileObjectList *object_list, const char *file)
 	        "{\n"
 	        "  \"object_count\": %d,\n"
 	        "  \"objects\": [\n",
-	        object_list->object_count);
-	writeObjects(fp, object_list);
+	        image_list->image_count);
+	writeObjects(fp, image_list);
 	fputs(
 	    "  ]\n"
 	    "}\n",
@@ -237,4 +249,14 @@ int tileObjectSaveData(struct TileObjectList *object_list, const char *file)
 	fclose(fp);
 
 	return 0;
+}
+
+void tileObjectDeleteList(struct TileObjectList *object_list)
+{
+	if (object_list != NULL) {
+		for (int i = 0; i < object_list->object_count; i++) {
+			free(object_list->objects[i].parts);
+		}
+		free(object_list->objects);
+	}
 }

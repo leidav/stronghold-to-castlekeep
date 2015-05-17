@@ -117,10 +117,10 @@ int gm1SaveHeader(struct Gm1 *gm1, const char *file);
 
 int gm1CreateFromFile(struct Gm1 *gm1, const char *file);
 
-int gm1CreateImageList(struct ImageList *image_list, struct Gm1 *Gm1);
+int gm1CreateImageList(struct ImageList *image_list, struct Gm1 *Gm1,
+                       int palette);
 
-int gm1CreateTileObjectList(struct TileObjectList *object_list,
-                            struct Gm1 *Gm1);
+int gm1CreateTileObjectList(struct ImageList *image_list, struct Gm1 *Gm1);
 
 void gm1Delete(struct Gm1 *Gm1);
 
@@ -129,5 +129,8 @@ int gm1IsTileObject(struct Gm1 *gm1);
 int gm1IsAnimation(struct Gm1 *gm1);
 
 int gm1SavePalette(struct Gm1 *gm1, const char *file);
+
+int gm1CreatePaletteImage(struct Image *image, const uint16_t *palette,
+                          int size);
 
 #endif  // GM1_H

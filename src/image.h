@@ -28,9 +28,9 @@
 #define COLOR_CONVERT_GREEN(c) ((uint8_t)((COLOR_MASK_GREEN & (c)) >> 2))
 #define COLOR_CONVERT_RED(c) ((uint8_t)((COLOR_MASK_RED & (c)) >> 7))
 
-#define IMAGE_TYPE_ANIMATION
-#define IMAGE_TYPE_TILE
-#define IMAGE_TYPE_OTHER
+#define IMAGE_TYPE_ANIMATION 0x0
+#define IMAGE_TYPE_TILE 0x1
+#define IMAGE_TYPE_OTHER 0x2
 
 struct Pos {
 	int x;
@@ -61,6 +61,7 @@ struct ImageList {
 	int type;
 	int image_count;
 	struct Image *images;
+	void *data;
 };
 
 struct TilePart {
@@ -77,7 +78,6 @@ struct TileObject {
 
 struct TileObjectList {
 	int object_count;
-	struct ImageList image_list;
 	struct TileObject *objects;
 };
 
@@ -102,7 +102,7 @@ void imageClear(struct Image *image, uint32_t color);
 
 void imageDelete(struct Image *image);
 
-int imageCreateList(struct ImageList *image_list, int count);
+int imageCreateList(struct ImageList *image_list, int count, int type);
 
 void imageDeleteList(struct ImageList *image_list);
 
@@ -112,7 +112,7 @@ void tileObjectDelete(struct TileObject *object);
 
 int tileObjectCreateList(struct TileObjectList *object_list, int count);
 
-int tileObjectSaveData(struct TileObjectList *object_list, const char *file);
+int tileObjectSaveData(struct ImageList *image_list, const char *file);
 
 void tileObjectDeleteList(struct TileObjectList *object_list);
 

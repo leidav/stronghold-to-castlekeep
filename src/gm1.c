@@ -290,21 +290,21 @@ static int decodeBitmap(struct Image *image, int width, int height,
 	return 0;
 }
 
-int gm1CreateTileObjectList(struct TileObjectList *object_list, struct Gm1 *gm1)
+int gm1CreateTileObjectList(struct ImageList *image_list, struct Gm1 *gm1)
 {
 	int object_count = 0;
-
+	struct TileObjectList *object_list = NULL;
 	for (int i = 0; i < gm1->header.image_count; i++) {
 		if (gm1->image_headers[i].part == gm1->image_headers[i].parts - 1) {
 			object_count++;
 		}
 	}
 
-	if (tileObjectCreateList(object_list, object_count)) {
-		tileObjectDeleteList(object_list);
-		free(object_list);
+	if (imageCreateList(image_list, object_count, IMAGE_TYPE_TILE) == -1) {
 		return -1;
 	}
+
+	object_list = (struct TileObjectList *)image_list->data;
 
 	int i = 0;
 	int j = 0;
@@ -322,9 +322,8 @@ int gm1CreateTileObjectList(struct TileObjectList *object_list, struct Gm1 *gm1)
 		int x = 0;
 		int y = 0;
 
-		if (tileObjectCreate(&object_list->objects[j], part_count)) {
+		if (tileObjectCreate(&object_list->objects[j], part_count) == -1) {
 			tileObjectDeleteList(object_list);
-			free(object_list);
 			return -1;
 		}
 
@@ -360,10 +359,9 @@ int gm1CreateTileObjectList(struct TileObjectList *object_list, struct Gm1 *gm1)
 			}
 		}
 
-		if (imageCreate(&object_list->image_list.images[j], image_width,
-		                image_height)) {
+		if (imageCreate(&image_list->images[j], image_width, image_height) ==
+		    -1) {
 			tileObjectDeleteList(object_list);
-			free(object_list);
 			return -1;
 		}
 		j++;
@@ -371,20 +369,19 @@ int gm1CreateTileObjectList(struct TileObjectList *object_list, struct Gm1 *gm1)
 
 	int k = 0;
 	for (j = 0; j < object_list->object_count; j++) {
-		imageClear(&object_list->image_list.images[j], 0x00);
+		imageClear(&image_list->images[j], 0x00);
 		for (i = 0; i < object_list->objects[j].part_count; i++) {
 			object_list->objects[j].parts[i].rect.y =
-			    (object_list->image_list.images[j].height -
+			    (image_list->images[j].height -
 			     (object_list->objects[j].parts[i].rect.y +
 			      object_list->objects[j].parts[i].rect.height));
 
-			if (decodeTgxAndTile(&object_list->image_list.images[j],
+			if (decodeTgxAndTile(&image_list->images[j],
 			                     &object_list->objects[j].parts[i].rect,
 			                     &gm1->image_headers[k],
 			                     gm1->image_data + gm1->image_offset_list[k],
-			                     gm1->image_size_list[k])) {
+			                     gm1->image_size_list[k]) == -1) {
 				tileObjectDeleteList(object_list);
-				free(object_list);
 				return -1;
 			}
 			k++;
@@ -394,20 +391,22 @@ int gm1CreateTileObjectList(struct TileObjectList *object_list, struct Gm1 *gm1)
 	return 0;
 }
 
-int gm1CreateImageList(struct ImageList *image_list, struct Gm1 *gm1)
+int gm1CreateImageList(struct ImageList *image_list, struct Gm1 *gm1,
+                       int palette)
 {
-	image_list->image_count = gm1->header.image_count;
-	image_list->images =
-	    malloc(sizeof(*(image_list->images)) * gm1->header.image_count);
-	if (image_list->images == NULL) {
-		imageDeleteList(image_list);
-		return -1;
-	}
-
 	switch (gm1->header.data_type) {
+		case GM1_DATA_TGX_AND_TILE:
+			if (gm1CreateTileObjectList(image_list, gm1) == -1) {
+				return -1;
+			}
+			break;
 		case GM1_DATA_TGX:
 		case GM1_DATA_TGX_FONT:
 		case GM1_DATA_TGX_CONST_SIZE:
+			if (imageCreateList(image_list, gm1->header.image_count,
+			                    IMAGE_TYPE_OTHER)) {
+				return -1;
+			}
 			for (int i = 0; i < image_list->image_count; i++) {
 				if (tgxCreateImage(&(image_list->images[i]),
 				                   gm1->image_headers[i].image_width,
@@ -420,13 +419,18 @@ int gm1CreateImageList(struct ImageList *image_list, struct Gm1 *gm1)
 			}
 			break;
 		case GM1_DATA_ANIMATION:
+			if (imageCreateList(image_list, gm1->header.image_count,
+			                    IMAGE_TYPE_OTHER)) {
+				return -1;
+			}
 			for (int i = 0; i < image_list->image_count; i++) {
 				if (tgxCreateImage(&(image_list->images[i]),
 				                   gm1->image_headers[i].image_width,
 				                   gm1->image_headers[i].image_height,
 				                   gm1->image_data + gm1->image_offset_list[i],
 				                   gm1->image_size_list[i],
-				                   gm1->palette + 1 * GM1_PALETTE_SIZE) == -1) {
+				                   gm1->palette + palette * GM1_PALETTE_SIZE) ==
+				    -1) {
 					imageDeleteList(image_list);
 					return -1;
 				}
@@ -434,6 +438,10 @@ int gm1CreateImageList(struct ImageList *image_list, struct Gm1 *gm1)
 			break;
 		case GM1_DATA_BITMAP:
 		case GM1_DATA_BITMAP_OTHER:
+			if (imageCreateList(image_list, gm1->header.image_count,
+			                    IMAGE_TYPE_OTHER)) {
+				return -1;
+			}
 			for (int i = 0; i < image_list->image_count; i++) {
 				if (decodeBitmap(&(image_list->images[i]),
 				                 gm1->image_headers[i].image_width,
@@ -446,7 +454,6 @@ int gm1CreateImageList(struct ImageList *image_list, struct Gm1 *gm1)
 			}
 			break;
 		default:
-			imageDeleteList(image_list);
 			return -1;
 			break;
 	}
@@ -521,5 +528,37 @@ int gm1SavePalette(struct Gm1 *gm1, const char *file)
 	}
 	fwrite(gm1->palette, GM1_PALETTE_SIZE, GM1_PALETTE_COUNT, fp);
 	fclose(fp);
+	return 0;
+}
+
+int gm1CreatePaletteImage(struct Image *image, const uint16_t *palette,
+                          int size)
+{
+	const int linewidth = 256;
+	const int linecount = (GM1_PALETTE_COUNT * GM1_PALETTE_SIZE) / linewidth;
+
+	if (imageCreate(image, size * linewidth, size * linecount) == -1) {
+		return -1;
+	}
+	int j = 0;
+	int k = 0;
+	for (int y = 0; y < image->height; y++) {
+		for (int x = 0; x < image->width; x++) {
+			image->pixel[y * image->width + x].a = 0xFF;
+			image->pixel[y * image->width + x].r =
+			    COLOR_CONVERT_RED(palette[j * linewidth + k]);
+			image->pixel[y * image->width + x].g =
+			    COLOR_CONVERT_GREEN(palette[j * linewidth + k]);
+			image->pixel[y * image->width + x].b =
+			    COLOR_CONVERT_BLUE(palette[j * linewidth + k]);
+			if (x % color_size == 0) {
+				k++;
+			}
+		}
+		k = 0;
+		if (y % color_size == 0) {
+			j++;
+		}
+	}
 	return 0;
 }

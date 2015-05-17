@@ -21,14 +21,16 @@
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <limits.h>
 
 #include "gm1.h"
 #include "tgx.h"
 #include "image.h"
 
 struct Options {
-	int convert_tgx;
-	int save_header;
+	unsigned int convert_tgx;
+	unsigned int save_header;
+	unsigned int palette;
 };
 
 static void printHelp(FILE *fp)
@@ -47,7 +49,7 @@ static int saveImages(struct ImageList *image_list, const char *output_dir)
 {
 	char string_buffer[256];
 	for (int i = 0; i < image_list->image_count; i++) {
-		snprintf(string_buffer, 256, "%s/image%d.png", output_dir, i);
+		snprintf(string_buffer, 256, "%s/%d.png", output_dir, i);
 		if (imageSave(&image_list->images[i], string_buffer) == -1) {
 			fprintf(stderr, "Error on saving images\n");
 			return 1;
@@ -60,17 +62,24 @@ static int saveHeader(struct Gm1 *gm1, const char *output_dir)
 {
 	char string_buffer[256];
 	snprintf(string_buffer, 256, "%s/gm1.json", output_dir);
-	gm1SaveHeader(gm1, string_buffer);
-	return 0;
+	return gm1SaveHeader(gm1, string_buffer);
 }
 
-static int saveTileObjectData(struct TileObjectList *list,
-                              const char *output_dir)
+static int savePalette(struct Gm1 *gm1, const char *output_dir)
+{
+	char string_buffer[256];
+	struct Image img;
+
+	snprintf(string_buffer, 256, "%s/palette.png", output_dir);
+	gm1CreatePaletteImage(&img, gm1->palette, 16);
+	return imageSave(&img, string_buffer);
+}
+
+static int saveTileObjectData(struct ImageList *list, const char *output_dir)
 {
 	char string_buffer[256];
 	snprintf(string_buffer, 256, "%s/data.json", output_dir);
-	tileObjectSaveData(list, string_buffer);
-	return 0;
+	return tileObjectSaveData(list, string_buffer);
 }
 
 static int convertTgx(const char *input_file, const char *output_dir)
@@ -91,7 +100,7 @@ static int convertTgx(const char *input_file, const char *output_dir)
 		return 1;
 	}
 
-	snprintf(string_buffer, 256, "%s/image0.png", output_dir);
+	snprintf(string_buffer, 256, "%s/0.png", output_dir);
 	if (imageSave(&image, string_buffer) == -1) {
 		fprintf(stderr, "Error on saving images\n");
 		tgxDelete(&tgx);
@@ -109,7 +118,6 @@ static int convertGm1(const char *input_file, const char *output_dir,
                       struct Options *options)
 {
 	struct ImageList image_list;
-	struct TileObjectList object_list;
 	struct Gm1 *gm1 = malloc(sizeof(*gm1));
 
 	if (gm1CreateFromFile(gm1, input_file) == -1) {
@@ -117,43 +125,28 @@ static int convertGm1(const char *input_file, const char *output_dir,
 		return 1;
 	}
 
-	if (gm1IsTileObject(gm1)) {
-		if (gm1CreateTileObjectList(&object_list, gm1) == -1) {
-			fprintf(stderr, "Error on decoding image\n");
-			gm1Delete(gm1);
-			return 1;
-		}
-		if (saveImages(&object_list.image_list, output_dir) == -1) {
-			fprintf(stderr, "Error on saving images\n");
-			tileObjectDeleteList(&object_list);
-			gm1Delete(gm1);
-			return 1;
-		}
-		if (saveTileObjectData(&object_list, output_dir) == -1) {
-			fprintf(stderr, "Error on saving data\n");
-			tileObjectDeleteList(&object_list);
-			gm1Delete(gm1);
-			return 1;
-		}
-		tileObjectDeleteList(&object_list);
-
-	} else {
-		if (gm1CreateImageList(&image_list, gm1) == -1) {
-			fprintf(stderr, "Error on decoding image\n");
-			gm1Delete(gm1);
-			return 1;
-		}
-		if (saveImages(&image_list, output_dir) == -1) {
-			fprintf(stderr, "Error on saving images\n");
-			imageDeleteList(&image_list);
-			gm1Delete(gm1);
-			return 1;
-		}
-		imageDeleteList(&image_list);
+	if (gm1CreateImageList(&image_list, gm1, options->palette) == -1) {
+		fprintf(stderr, "Error on decoding image\n");
+		gm1Delete(gm1);
+		return 1;
 	}
+	if (saveImages(&image_list, output_dir) == -1) {
+		fprintf(stderr, "Error on saving images\n");
+		imageDeleteList(&image_list);
+		gm1Delete(gm1);
+		return 1;
+	}
+
+	if (gm1IsTileObject(gm1)) {
+		saveTileObjectData(&image_list, output_dir);
+	}
+
+	imageDeleteList(&image_list);
+
 	if (options->save_header == 1) {
-		if (saveHeader(gm1, output_dir) == -1) {
-			fprintf(stderr, "Error on saving data\n");
+		if (saveHeader(gm1, output_dir) == -1 ||
+		    savePalette(gm1, output_dir) == -1) {
+			fprintf(stderr, "Error on saving header\n");
 			gm1Delete(gm1);
 			free(gm1);
 			return 1;
@@ -184,6 +177,22 @@ int main(int argc, char *argv[])
 
 		if (strcmp(argv[i], "--header") == 0) {
 			options.save_header = 1;
+		}
+
+		if (strcmp(argv[i], "-p") == 0 || strcmp(argv[i], "--palette") == 0) {
+			char *tmp = NULL;
+			unsigned long val = strtoul(argv[++i], &tmp, 10);
+			if (*tmp != '\0') {
+				printHelp(stderr);
+				return 1;
+			}
+
+			if (val >= 10) {
+				fprintf(stderr, "Error: Palette has to be between 0 and 9\n");
+				return 1;
+			}
+			printf("%d\n", (int)val);
+			options.palette = val;
 		}
 	}
 

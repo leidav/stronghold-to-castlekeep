@@ -45,10 +45,10 @@ struct Tgx {
 int tgxCreateFromFile(struct Tgx *tgx, const char *file);
 
 int tgxDecode(struct Image *image, struct Rect *rect, uint8_t *data, int size,
-              uint16_t *palette);
+              const uint16_t *palette);
 
 int tgxCreateImage(struct Image *image, int width, int height, uint8_t *data,
-                   int size, uint16_t *palette);
+                   int size, const uint16_t *palette);
 
 void tgxDelete(struct Tgx *tgx);
 #endif  // TGX_H

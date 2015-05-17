@@ -74,7 +74,7 @@ void tgxDelete(struct Tgx *tgx)
 }
 
 int tgxDecode(struct Image *image, struct Rect *rect, uint8_t *data, int size,
-              uint16_t *palette)
+              const uint16_t *palette)
 {
 	int left = rect->x;
 	int right = rect->x + rect->width;
@@ -176,7 +176,7 @@ int tgxDecode(struct Image *image, struct Rect *rect, uint8_t *data, int size,
 }
 
 int tgxCreateImage(struct Image *image, int width, int height, uint8_t *data,
-                   int size, uint16_t *palette)
+                   int size, const uint16_t *palette)
 {
 	struct Rect rect = {0, 0, width, height};
 	if (imageCreate(image, width, height)) {
