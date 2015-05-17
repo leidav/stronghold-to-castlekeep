@@ -551,12 +551,12 @@ int gm1CreatePaletteImage(struct Image *image, const uint16_t *palette,
 			    COLOR_CONVERT_GREEN(palette[j * linewidth + k]);
 			image->pixel[y * image->width + x].b =
 			    COLOR_CONVERT_BLUE(palette[j * linewidth + k]);
-			if (x % color_size == 0) {
+			if (x % size == 0) {
 				k++;
 			}
 		}
 		k = 0;
-		if (y % color_size == 0) {
+		if (y % size == 0) {
 			j++;
 		}
 	}
