@@ -290,7 +290,7 @@ static int decodeBitmap(struct Image *image, int width, int height,
 	return 0;
 }
 
-int gm1CreateTileObjectList(struct ImageList *image_list, struct Gm1 *gm1)
+static int gm1CreateTileObjectList(struct ImageList *image_list, struct Gm1 *gm1)
 {
 	int object_count = 0;
 	struct TileObjectList *object_list = NULL;
@@ -420,7 +420,7 @@ int gm1CreateImageList(struct ImageList *image_list, struct Gm1 *gm1,
 			break;
 		case GM1_DATA_ANIMATION:
 			if (imageCreateList(image_list, gm1->header.image_count,
-			                    IMAGE_TYPE_OTHER)) {
+			                    IMAGE_TYPE_ANIMATION)) {
 				return -1;
 			}
 			for (int i = 0; i < image_list->image_count; i++) {

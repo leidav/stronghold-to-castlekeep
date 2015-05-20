@@ -55,7 +55,9 @@ static int saveImages(struct ImageList *image_list, const char *output_dir)
 			return 1;
 		}
 	}
-	return 0;
+	memset(string_buffer,0,256);
+	snprintf(string_buffer, 256, "%s/data.json", output_dir);
+	return imageSaveData(image_list, string_buffer);
 }
 
 static int saveHeader(struct Gm1 *gm1, const char *output_dir)
@@ -73,13 +75,6 @@ static int savePalette(struct Gm1 *gm1, const char *output_dir)
 	snprintf(string_buffer, 256, "%s/palette.png", output_dir);
 	gm1CreatePaletteImage(&img, gm1->palette, 16);
 	return imageSave(&img, string_buffer);
-}
-
-static int saveTileObjectData(struct ImageList *list, const char *output_dir)
-{
-	char string_buffer[256];
-	snprintf(string_buffer, 256, "%s/data.json", output_dir);
-	return tileObjectSaveData(list, string_buffer);
 }
 
 static int convertTgx(const char *input_file, const char *output_dir)
@@ -135,10 +130,6 @@ static int convertGm1(const char *input_file, const char *output_dir,
 		imageDeleteList(&image_list);
 		gm1Delete(gm1);
 		return 1;
-	}
-
-	if (gm1IsTileObject(gm1)) {
-		saveTileObjectData(&image_list, output_dir);
 	}
 
 	imageDeleteList(&image_list);

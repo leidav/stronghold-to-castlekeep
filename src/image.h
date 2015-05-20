@@ -104,6 +104,8 @@ void imageDelete(struct Image *image);
 
 int imageCreateList(struct ImageList *image_list, int count, int type);
 
+int imageSaveData(struct ImageList* image_list, const char *file);
+
 void imageDeleteList(struct ImageList *image_list);
 
 int tileObjectCreate(struct TileObject *object, int part_count);
@@ -111,8 +113,6 @@ int tileObjectCreate(struct TileObject *object, int part_count);
 void tileObjectDelete(struct TileObject *object);
 
 int tileObjectCreateList(struct TileObjectList *object_list, int count);
-
-int tileObjectSaveData(struct ImageList *image_list, const char *file);
 
 void tileObjectDeleteList(struct TileObjectList *object_list);
 

@@ -126,6 +126,87 @@ int imageCreateList(struct ImageList *image_list, int count, int type)
 	return 0;
 }
 
+static void writeTileParts(FILE *fp, struct TileObject *object)
+{
+	for (int i = 0; i < object->part_count; i++) {
+		fprintf(fp,
+		        "        {\n"
+		        "          \"id\": %d,\n"
+		        "          \"x\": %d,\n"
+		        "          \"y\": %d,\n"
+		        "          \"rect\": {\n"
+		        "            \"x\": %d,\n"
+		        "            \"y\": %d,\n"
+		        "            \"width\": %d,\n"
+		        "            \"height\": %d\n"
+		        "          }\n",
+		        object->parts[i].id, object->parts[i].x, object->parts[i].y,
+		        object->parts[i].rect.x, object->parts[i].rect.y,
+		        object->parts[i].rect.width, object->parts[i].rect.height);
+		if (i < object->part_count - 1) {
+			fputs("        },\n", fp);
+		} else {
+			fputs("        }\n", fp);
+		}
+	}
+}
+
+static void writeImages(FILE *fp, struct ImageList *image_list)
+{
+	struct TileObjectList *object_list =
+	    (struct TileObjectList *)image_list->data;
+
+	fputs("  \"images\": [\n", fp);
+
+	for (int i = 0; i < image_list->image_count; i++) {
+		fprintf(fp,
+		        "    {\n"
+		        "      \"id\": %d,\n"
+		        "      \"width\": %d,\n"
+		        "      \"heigth\": %d,\n",
+		        i, image_list->images[i].width, image_list->images[i].height);
+		if (image_list->type == IMAGE_TYPE_OTHER) {
+		} else {
+			if (image_list->type == IMAGE_TYPE_TILE) {
+				fprintf(fp,
+				        "      \"part_count\": %d,\n"
+				        "      \"parts\": [\n",
+				        object_list->objects[i].part_count);
+				writeTileParts(fp, &object_list->objects[i]);
+				fputs("      ]\n", fp);
+			}
+		}
+		if (i < image_list->image_count - 1) {
+			fputs("    },\n", fp);
+		} else {
+			fputs("    }\n", fp);
+		}
+	}
+	fputs("  ]\n", fp);
+}
+
+int imageSaveData(struct ImageList *image_list, const char *file)
+{
+	FILE *fp = fopen(file, "w");
+	if (fp == NULL) {
+		return -1;
+	}
+
+	const static char *type_lookup[] = {"anim", "tile", "other"};
+
+	fprintf(fp,
+	        "{\n"
+	        "  \"count\": %d,\n"
+	        "  \"type\": \"%s\",\n",
+	        image_list->image_count, type_lookup[image_list->type]);
+	writeImages(fp, image_list);
+	fputs("}\n", fp);
+
+	fclose(fp);
+
+	return 0;
+}
+
 void imageDeleteList(struct ImageList *image_list)
 {
 	if (image_list != NULL) {
@@ -172,82 +253,6 @@ int tileObjectCreateList(struct TileObjectList *objects_list, int count)
 	for (int i = 0; i < count; i++) {
 		objects_list->objects[i].parts = NULL;
 	}
-	return 0;
-}
-
-static void writeTileParts(FILE *fp, struct TilePart *parts, int count)
-{
-	for (int i = 0; i < count; i++) {
-		fprintf(fp,
-		        "        {\n"
-		        "          \"id\": %d,\n"
-		        "          \"x\": %d,\n"
-		        "          \"y\": %d,\n"
-		        "          \"rect\": {\n"
-		        "            \"x\": %d,\n"
-		        "            \"y\": %d,\n"
-		        "            \"width\": %d,\n"
-		        "            \"height\": %d\n"
-		        "          }\n",
-		        parts[i].id, parts[i].x, parts[i].y, parts[i].rect.x,
-		        parts[i].rect.y, parts[i].rect.width, parts[i].rect.height);
-		if (i < count - 1) {
-			fputs("        },\n", fp);
-		} else {
-			fputs("        }\n", fp);
-		}
-	}
-}
-
-static void writeObjects(FILE *fp, struct ImageList *image_list)
-{
-	struct TileObjectList *object_list =
-	    (struct TileObjectList *)image_list->data;
-	for (int i = 0; i < image_list->image_count; i++) {
-		fprintf(fp,
-		        "    {\n"
-		        "      \"id\": %d,\n"
-		        "      \"width\": %d,\n"
-		        "      \"heigth\": %d,\n"
-		        "      \"part_count\": %d,\n"
-		        "      \"parts\": [\n",
-		        i, image_list->images[i].width, image_list->images[i].height,
-		        object_list->objects[i].part_count);
-		writeTileParts(fp, object_list->objects[i].parts,
-		               object_list->objects[i].part_count);
-		fputs("      ]\n", fp);
-		if (i < object_list->object_count - 1) {
-			fputs("    },\n", fp);
-		} else {
-			fputs("    }\n", fp);
-		}
-	}
-}
-
-int tileObjectSaveData(struct ImageList *image_list, const char *file)
-{
-	if (image_list->type != IMAGE_TYPE_TILE) {
-		return -1;
-	}
-
-	FILE *fp = fopen(file, "w");
-	if (fp == NULL) {
-		return -1;
-	}
-
-	fprintf(fp,
-	        "{\n"
-	        "  \"object_count\": %d,\n"
-	        "  \"objects\": [\n",
-	        image_list->image_count);
-	writeObjects(fp, image_list);
-	fputs(
-	    "  ]\n"
-	    "}\n",
-	    fp);
-
-	fclose(fp);
-
 	return 0;
 }
 
