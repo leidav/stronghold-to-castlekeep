@@ -82,13 +82,12 @@ struct TileObjectList {
 };
 
 struct AnimationFrame {
-	int num;
+	int id;
 	struct Pos center;
 };
 
 struct Animation {
 	int frame_count;
-	struct ImageList image_list;
 	struct AnimationFrame *frames;
 };
 
@@ -104,7 +103,7 @@ void imageDelete(struct Image *image);
 
 int imageCreateList(struct ImageList *image_list, int count, int type);
 
-int imageSaveData(struct ImageList* image_list, const char *file);
+int imageSaveData(struct ImageList *image_list, const char *file);
 
 void imageDeleteList(struct ImageList *image_list);
 
@@ -115,5 +114,9 @@ void tileObjectDelete(struct TileObject *object);
 int tileObjectCreateList(struct TileObjectList *object_list, int count);
 
 void tileObjectDeleteList(struct TileObjectList *object_list);
+
+int animationCreate(struct Animation *animation, int count);
+
+void animationDelete(struct Animation *animation);
 
 #endif  // IMAGE_H

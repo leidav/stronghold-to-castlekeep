@@ -290,7 +290,7 @@ static int decodeBitmap(struct Image *image, int width, int height,
 	return 0;
 }
 
-static int gm1CreateTileObjectList(struct ImageList *image_list, struct Gm1 *gm1)
+int gm1CreateTileObjectList(struct ImageList *image_list, struct Gm1 *gm1)
 {
 	int object_count = 0;
 	struct TileObjectList *object_list = NULL;

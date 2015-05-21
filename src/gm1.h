@@ -120,6 +120,8 @@ int gm1CreateFromFile(struct Gm1 *gm1, const char *file);
 int gm1CreateImageList(struct ImageList *image_list, struct Gm1 *Gm1,
                        int palette);
 
+int gm1CreateTileObjectList(struct ImageList *image_list, struct Gm1 *gm1);
+
 void gm1Delete(struct Gm1 *Gm1);
 
 int gm1IsTileObject(struct Gm1 *gm1);

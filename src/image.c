@@ -128,6 +128,11 @@ int imageCreateList(struct ImageList *image_list, int count, int type)
 
 static void writeTileParts(FILE *fp, struct TileObject *object)
 {
+	fprintf(fp,
+	        "      \"part_count\": %d,\n"
+	        "      \"parts\": [\n",
+	        object->part_count);
+
 	for (int i = 0; i < object->part_count; i++) {
 		fprintf(fp,
 		        "        {\n"
@@ -149,6 +154,7 @@ static void writeTileParts(FILE *fp, struct TileObject *object)
 			fputs("        }\n", fp);
 		}
 	}
+	fputs("      ]\n", fp);
 }
 
 static void writeImages(FILE *fp, struct ImageList *image_list)
@@ -168,12 +174,7 @@ static void writeImages(FILE *fp, struct ImageList *image_list)
 		if (image_list->type == IMAGE_TYPE_OTHER) {
 		} else {
 			if (image_list->type == IMAGE_TYPE_TILE) {
-				fprintf(fp,
-				        "      \"part_count\": %d,\n"
-				        "      \"parts\": [\n",
-				        object_list->objects[i].part_count);
 				writeTileParts(fp, &object_list->objects[i]);
-				fputs("      ]\n", fp);
 			}
 		}
 		if (i < image_list->image_count - 1) {
