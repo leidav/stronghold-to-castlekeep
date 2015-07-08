@@ -326,6 +326,7 @@ int gm1CreateTileObjectList(struct ImageList *image_list, struct Gm1 *gm1)
 			tileObjectDeleteList(object_list);
 			return -1;
 		}
+		object_list->objects[j].id = j;
 
 		while (part < part_count) {
 			if (xtile < current_length) {
@@ -390,6 +391,31 @@ int gm1CreateTileObjectList(struct ImageList *image_list, struct Gm1 *gm1)
 
 	return 0;
 }
+int gm1CreateAnimation(struct ImageList *image_list, struct Gm1 *gm1,
+                       int palette)
+{
+	struct Animation *animation;
+	if (imageCreateList(image_list, gm1->header.image_count,
+	                    IMAGE_TYPE_ANIMATION)) {
+		return -1;
+	}
+	animation = (struct Animation *)image_list->data;
+	for (int i = 0; i < image_list->image_count; i++) {
+		if (tgxCreateImage(&(image_list->images[i]),
+		                   gm1->image_headers[i].image_width,
+		                   gm1->image_headers[i].image_height,
+		                   gm1->image_data + gm1->image_offset_list[i],
+		                   gm1->image_size_list[i],
+		                   gm1->palette + palette * GM1_PALETTE_SIZE) == -1) {
+			imageDeleteList(image_list);
+			return -1;
+		}
+		animation->frames[i].id = i;
+		animation->frames[i].center.x = gm1->header.center_x;
+		animation->frames[i].center.y = gm1->header.center_y;
+	}
+	return 0;
+}
 
 int gm1CreateImageList(struct ImageList *image_list, struct Gm1 *gm1,
                        int palette)
@@ -419,21 +445,8 @@ int gm1CreateImageList(struct ImageList *image_list, struct Gm1 *gm1,
 			}
 			break;
 		case GM1_DATA_ANIMATION:
-			if (imageCreateList(image_list, gm1->header.image_count,
-			                    IMAGE_TYPE_ANIMATION)) {
+			if (gm1CreateAnimation(image_list, gm1, palette) == -1) {
 				return -1;
-			}
-			for (int i = 0; i < image_list->image_count; i++) {
-				if (tgxCreateImage(&(image_list->images[i]),
-				                   gm1->image_headers[i].image_width,
-				                   gm1->image_headers[i].image_height,
-				                   gm1->image_data + gm1->image_offset_list[i],
-				                   gm1->image_size_list[i],
-				                   gm1->palette + palette * GM1_PALETTE_SIZE) ==
-				    -1) {
-					imageDeleteList(image_list);
-					return -1;
-				}
 			}
 			break;
 		case GM1_DATA_BITMAP:

@@ -116,6 +116,18 @@ int imageCreateList(struct ImageList *image_list, int count, int type)
 			free(image_list->images);
 			return -1;
 		}
+	} else if (type == IMAGE_TYPE_ANIMATION) {
+		image_list->data = malloc(sizeof(struct Animation));
+		if (image_list->data == NULL) {
+			free(image_list->images);
+			return -1;
+		}
+		if (animationCreate(image_list->data, count)) {
+			free(image_list->data);
+			free(image_list->images);
+			return -1;
+		}
+
 	} else {
 		image_list->data = NULL;
 	}
@@ -126,93 +138,11 @@ int imageCreateList(struct ImageList *image_list, int count, int type)
 	return 0;
 }
 
-static void writeTileParts(FILE *fp, struct TileObject *object)
-{
-	fprintf(fp,
-	        "      \"part_count\": %d,\n"
-	        "      \"parts\": [\n",
-	        object->part_count);
-
-	for (int i = 0; i < object->part_count; i++) {
-		fprintf(fp,
-		        "        {\n"
-		        "          \"id\": %d,\n"
-		        "          \"x\": %d,\n"
-		        "          \"y\": %d,\n"
-		        "          \"rect\": {\n"
-		        "            \"x\": %d,\n"
-		        "            \"y\": %d,\n"
-		        "            \"width\": %d,\n"
-		        "            \"height\": %d\n"
-		        "          }\n",
-		        object->parts[i].id, object->parts[i].x, object->parts[i].y,
-		        object->parts[i].rect.x, object->parts[i].rect.y,
-		        object->parts[i].rect.width, object->parts[i].rect.height);
-		if (i < object->part_count - 1) {
-			fputs("        },\n", fp);
-		} else {
-			fputs("        }\n", fp);
-		}
-	}
-	fputs("      ]\n", fp);
-}
-
-static void writeImages(FILE *fp, struct ImageList *image_list)
-{
-	struct TileObjectList *object_list =
-	    (struct TileObjectList *)image_list->data;
-
-	fputs("  \"images\": [\n", fp);
-
-	for (int i = 0; i < image_list->image_count; i++) {
-		fprintf(fp,
-		        "    {\n"
-		        "      \"id\": %d,\n"
-		        "      \"width\": %d,\n"
-		        "      \"heigth\": %d,\n",
-		        i, image_list->images[i].width, image_list->images[i].height);
-		if (image_list->type == IMAGE_TYPE_OTHER) {
-		} else {
-			if (image_list->type == IMAGE_TYPE_TILE) {
-				writeTileParts(fp, &object_list->objects[i]);
-			}
-		}
-		if (i < image_list->image_count - 1) {
-			fputs("    },\n", fp);
-		} else {
-			fputs("    }\n", fp);
-		}
-	}
-	fputs("  ]\n", fp);
-}
-
-int imageSaveData(struct ImageList *image_list, const char *file)
-{
-	FILE *fp = fopen(file, "w");
-	if (fp == NULL) {
-		return -1;
-	}
-
-	const static char *type_lookup[] = {"anim", "tile", "other"};
-
-	fprintf(fp,
-	        "{\n"
-	        "  \"count\": %d,\n"
-	        "  \"type\": \"%s\",\n",
-	        image_list->image_count, type_lookup[image_list->type]);
-	writeImages(fp, image_list);
-	fputs("}\n", fp);
-
-	fclose(fp);
-
-	return 0;
-}
-
 void imageDeleteList(struct ImageList *image_list)
 {
 	if (image_list != NULL) {
 		for (int i = 0; i < image_list->image_count; i++) {
-			free(image_list->images[i].pixel);
+			imageDelete(&image_list->images[i]);
 		}
 		free(image_list->images);
 		if (image_list->data != NULL) {
@@ -261,8 +191,145 @@ void tileObjectDeleteList(struct TileObjectList *object_list)
 {
 	if (object_list != NULL) {
 		for (int i = 0; i < object_list->object_count; i++) {
-			free(object_list->objects[i].parts);
+			tileObjectDelete(&object_list->objects[i]);
 		}
 		free(object_list->objects);
 	}
+}
+
+int animationCreate(struct Animation *animation, int frame_count)
+{
+	animation->frame_count = frame_count;
+	animation->frames = malloc(sizeof(*animation->frames) * frame_count);
+
+	if (animation->frames == NULL) {
+		return -1;
+	}
+
+	return 0;
+}
+
+void animationDelete(struct Animation *animation)
+{
+	if (animation != NULL) {
+		free(animation->frames);
+	}
+}
+
+static void writeTileObject(FILE *fp, struct TileObject *object)
+{
+	fprintf(fp,
+	        "    {\n"
+	        "      \"id\": %d,\n"
+	        "      \"part_count\": %d,\n"
+	        "      \"parts\": [\n",
+	        object->id, object->part_count);
+
+	for (int i = 0; i < object->part_count; i++) {
+		fprintf(fp,
+		        "        {\n"
+		        "          \"id\": %d,\n"
+		        "          \"x\": %d,\n"
+		        "          \"y\": %d,\n"
+		        "          \"rect\": {\n"
+		        "            \"x\": %d,\n"
+		        "            \"y\": %d,\n"
+		        "            \"width\": %d,\n"
+		        "            \"height\": %d\n"
+		        "          }\n",
+		        object->parts[i].id, object->parts[i].x, object->parts[i].y,
+		        object->parts[i].rect.x, object->parts[i].rect.y,
+		        object->parts[i].rect.width, object->parts[i].rect.height);
+		if (i < object->part_count - 1) {
+			fputs("        },\n", fp);
+		} else {
+			fputs("        }\n", fp);
+		}
+	}
+	fputs("      ]\n", fp);
+}
+
+static void writeAnimationFrame(FILE *fp, struct AnimationFrame *frame)
+{
+	fprintf(fp,
+	        "    {\n"
+	        "      \"id\": %d,\n"
+	        "      \"center\": {\n"
+	        "            \"x\": %d,\n"
+	        "            \"y\": %d\n"
+	        "      }\n",
+	        frame->id, frame->center.x, frame->center.y);
+}
+
+static void writeImages(FILE *fp, struct ImageList *image_list)
+{
+	fputs("  \"images\": [\n", fp);
+
+	for (int i = 0; i < image_list->image_count; i++) {
+		fprintf(fp,
+		        "    {\n"
+		        "      \"id\": %d,\n"
+		        "      \"width\": %d,\n"
+		        "      \"heigth\": %d\n",
+		        i, image_list->images[i].width, image_list->images[i].height);
+		if (i < image_list->image_count - 1) {
+			fputs("    },\n", fp);
+		} else {
+			fputs("    }\n", fp);
+		}
+	}
+	fputs("  ]", fp);
+}
+static int writeData(FILE *fp, struct ImageList *image_list)
+{
+	struct TileObjectList *object_list =
+	    (struct TileObjectList *)image_list->data;
+	struct Animation *animation = (struct Animation *)image_list->data;
+
+	fputs("  \"data\": [\n", fp);
+
+	if (image_list->type != IMAGE_TYPE_OTHER && image_list->data != NULL) {
+		for (int i = 0; i < image_list->image_count; i++) {
+			if (image_list->type == IMAGE_TYPE_TILE) {
+				writeTileObject(fp, &object_list->objects[i]);
+			} else if (image_list->type == IMAGE_TYPE_ANIMATION) {
+				writeAnimationFrame(fp, &animation->frames[i]);
+			} else {
+				return -1;
+			}
+
+			if (i < image_list->image_count - 1) {
+				fputs("    },\n", fp);
+			} else {
+				fputs("    }\n", fp);
+			}
+		}
+	}
+	fputs("  ]", fp);
+	return 0;
+}
+
+int imageSaveData(struct ImageList *image_list, const char *file)
+{
+	FILE *fp = fopen(file, "w");
+	if (fp == NULL) {
+		return -1;
+	}
+
+	const static char *type_lookup[] = {"anim", "tile", "other"};
+
+	fprintf(fp,
+	        "{\n"
+	        "  \"count\": %d,\n"
+	        "  \"type\": \"%s\",\n",
+	        image_list->image_count, type_lookup[image_list->type]);
+	writeImages(fp, image_list);
+	fputs(",\n", fp);
+	writeData(fp, image_list);
+	fputs("\n", fp);
+	fputs("}\n", fp);
+
+	fclose(fp);
+
+	return 0;
 }
