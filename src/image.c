@@ -16,6 +16,7 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 #include <png.h>
 
 #include "image.h"
@@ -83,8 +84,10 @@ int imageSave(struct Image *image, const char *file)
 
 void imageClear(struct Image *image, uint32_t color)
 {
+	struct Color c;
+	memcpy(&c,&color,sizeof(c));
 	for (int i = 0; i < image->width * image->height; i++) {
-		image->pixel[i] = *(struct Color *)&color;
+		image->pixel[i] = c;
 	}
 }
 
