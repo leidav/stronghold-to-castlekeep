@@ -18,7 +18,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
 	message(FATAL_ERROR "Builds within the source directory are not allowed!")
 endif()
 
-cmake_minimum_required (VERSION 2.6)
+cmake_minimum_required (VERSION 3.1)
 
 project (sh2ck)
 
@@ -29,7 +29,9 @@ endif()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
 
-set(CMAKE_C_FLAGS "-std=c99 -Werror -Wall")
+set(CMAKE_C_STANDARD 99)
+
+set(CMAKE_C_FLAGS " -Werror -Wall")
 
 find_package(PNG REQUIRED)
 
