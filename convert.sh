@@ -24,6 +24,6 @@ fi
 for i in $gm_dir/*.gm1 
 do
 	echo "Convert: `basename $i .gm1`"
-	bin/sh2ck $i "$asset_dir/`basename $i .gm1`"
+	bin/sh2ck --header $i "$asset_dir/`basename $i .gm1`"
 done
 
