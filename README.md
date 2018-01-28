@@ -1,5 +1,6 @@
 stronghold to castlekeep
 =======================
+A tool to convert strongholds gm1 and tgx files to png and json, as needed by castlekeep. 
 
 ## Build instructions
 
@@ -18,11 +19,11 @@ Build:
 
 ## Usage
 
-## Convert
+### Convert
 
     ./convert.sh stronghold_dir asset_dir
 
-## sh2ck
+### sh2ck
 
     sh2ck [options] input_file output_dir
     options:
