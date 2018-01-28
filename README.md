@@ -1,7 +1,7 @@
 stronghold to castlekeep
 =======================
 
-###Build instructions###
+## Build instructions
 
 Create a build directory:
   
@@ -16,13 +16,13 @@ Build:
 
     make 
 
-###Usage### 
+## Usage
 
-####Convert####
+## Convert
 
     ./convert.sh stronghold_dir asset_dir
 
-####sh2ck####
+## sh2ck
 
     sh2ck [options] input_file output_dir
     options:
