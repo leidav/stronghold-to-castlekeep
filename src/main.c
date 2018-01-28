@@ -63,7 +63,7 @@ static int saveImages(struct ImageList *image_list, const char *output_dir)
 static int saveHeader(struct Gm1 *gm1, const char *output_dir)
 {
 	char string_buffer[256];
-	snprintf(string_buffer, 256, "%s/gm1.json", output_dir);
+	snprintf(string_buffer, 256, "%s/gm1_header.json", output_dir);
 	return gm1SaveHeader(gm1, string_buffer);
 }
 
