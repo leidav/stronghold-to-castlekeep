@@ -23,6 +23,8 @@ if(NOT CMAKE_BUILD_TYPE)
 		         "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
+
 if(CMAKE_COMPILER_IS_GNUCC)
 	add_compile_options("-Werror")
 	add_compile_options("-Wall")
