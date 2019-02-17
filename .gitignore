@@ -5,6 +5,8 @@
 *~
 
 build/
+assets/
+stuff/
 bin/
 CmakeFiles
 CMakeCache.txt

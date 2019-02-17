@@ -13,33 +13,22 @@
 #You should have received a copy of the GNU General Public License
 #along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
-if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
-	message(FATAL_ERROR "Builds within the source directory are not allowed!")
-endif()
-
-cmake_minimum_required (VERSION 3.1)
+cmake_minimum_required (VERSION 3.9)
 
 project (sh2ck)
 
 if(NOT CMAKE_BUILD_TYPE)
-	set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, 
-		options are: None Debug Release RelWithDebInfo MinSizeRel." FORCE)
+	set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the build type" FORCE)
+	set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
+		         "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
-
-set(CMAKE_C_STANDARD 99)
-
-set(CMAKE_C_FLAGS " -Werror -Wall")
+if(CMAKE_COMPILER_IS_GNUCC)
+	add_compile_options("-Werror")
+	add_compile_options("-Wall")
+endif()
 
 find_package(PNG REQUIRED)
-
-include_directories(${PNG_INCLUDE_DIR})
-
-set(LIBRARIES m ${PNG_LIBRARIES})
-
-include_directories(${CMAKE_SOURCE_DIR}/src)
 
 add_subdirectory(src)
 

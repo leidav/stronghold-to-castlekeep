@@ -13,8 +13,22 @@
 #You should have received a copy of the GNU General Public License
 #along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-set(SOURCES main.c image.c gm1.c tgx.c)
-set(HEADERS image.h gm1.h tgx.h)
+add_executable(sh2ck main.c)
+target_sources(sh2ck PRIVATE
+	            "${CMAKE_CURRENT_SOURCE_DIR}/image.h"
+				"${CMAKE_CURRENT_SOURCE_DIR}/image.c"
+				"${CMAKE_CURRENT_SOURCE_DIR}/gm1.h"
+				"${CMAKE_CURRENT_SOURCE_DIR}/gm1.c"
+				"${CMAKE_CURRENT_SOURCE_DIR}/tgx.h"
+				"${CMAKE_CURRENT_SOURCE_DIR}/tgx.c")
 
-add_executable(${PROJECT_NAME} ${SOURCES})
-target_link_libraries (${PROJECT_NAME} ${LIBRARIES})
+target_include_directories(sh2ck PRIVATE ${CMAKE_SOURCE_DIR})
+
+target_compile_features(sh2ck PRIVATE c_std_11)
+
+target_link_libraries (sh2ck PRIVATE PNG::PNG)
+
+if(UNIX)
+	target_link_libraries (sh2ck PRIVATE m)
+endif()
+
