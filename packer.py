@@ -67,7 +67,8 @@ def createAtlas(width,height,atlas_file,loaded_images,images):
     atlas.save(atlas_file)
 
 def writeImages(images,f):
-    f.write("[images]\n")
+    l=len(images)
+    f.write(f"[images,{l},5,i,i,i,i,i]\n")
     f.write("#id,posx,posy,width,height\n")
     for img in images:
         id=img["id"]
@@ -80,7 +81,11 @@ def writeImages(images,f):
     return 
 
 def writeTileObjects(data,f):
-    f.write("\n[objects]\n")
+    l=0
+    for obj in data:
+        l+=obj["part_count"]
+
+    f.write(f"\n[objects,{l},3,i,i,i]\n")
     f.write("#id,tile_start,tiles\n")
     start_index=0
     for obj in data:
@@ -89,7 +94,7 @@ def writeTileObjects(data,f):
         f.write(f"{id},{start_index},{num_tiles}\n")
         start_index+=num_tiles
 
-    f.write("\n[tiles]\n")
+    f.write(f"\n[tiles,{l},7,i,i,i,i,i,i,i]\n")
     f.write("#objid,x,y,posx,posy,width,height\n")
     for obj in data:
         id=obj["id"]
@@ -103,7 +108,8 @@ def writeTileObjects(data,f):
             f.write(f"{id},{x},{y},{posx},{posy},{width},{height}\n")
     return
 def writeAnimationData(data,f):
-    f.write("\n[animation]\n")
+    l=len(data)
+    f.write(f"\n[animation,{l},3,i,i,i]\n")
     f.write("#frame,pivot_x,pivot_y\n")
     start_index=0
     for frame in data:
