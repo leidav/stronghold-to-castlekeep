@@ -15,11 +15,11 @@
  *
  */
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
-#include "tgx.h"
 #include "image.h"
+#include "tgx.h"
 
 int tgxCreateFromFile(struct Tgx *tgx, const char *file)
 {
@@ -179,7 +179,7 @@ int tgxCreateImage(struct Image *image, int width, int height, uint8_t *data,
                    int size, const uint16_t *palette)
 {
 	struct Rect rect = {0, 0, width, height};
-	if (imageCreate(image, width, height)) {
+	if (imageCreate(image, NULL, width, height)) {
 		return -1;
 	}
 	return tgxDecode(image, &rect, data, size, palette);

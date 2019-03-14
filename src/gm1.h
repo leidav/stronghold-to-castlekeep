@@ -117,10 +117,13 @@ int gm1SaveHeader(struct Gm1 *gm1, const char *file);
 
 int gm1CreateFromFile(struct Gm1 *gm1, const char *file);
 
-int gm1CreateImageList(struct ImageList *image_list, struct Gm1 *Gm1,
-                       int palette);
+int gm1CreateImageList(struct ImageList *image_list, int pixel_buffer_size,
+                       struct Gm1 *Gm1, int palette, unsigned int assemble);
 
-int gm1CreateTileObjectList(struct ImageList *image_list, struct Gm1 *gm1);
+int gm1CreateTileObjectList(struct ImageList *image_list, int pixel_buffer_size,
+                            struct Gm1 *gm1);
+int gm1CreateUnAssembledTileObjectList(struct ImageList *image_list,
+                                       int pixel_buffer_size, struct Gm1 *gm1);
 
 void gm1Delete(struct Gm1 *Gm1);
 

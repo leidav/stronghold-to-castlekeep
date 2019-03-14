@@ -15,13 +15,13 @@
  *
  */
 
-#include <stdlib.h>
-#include <stdio.h>
 #include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "gm1.h"
-#include "tgx.h"
 #include "image.h"
+#include "tgx.h"
 int gm1CreateFromFile(struct Gm1 *gm1, const char *file)
 {
 	FILE *fp = fopen(file, "rb");
@@ -290,7 +290,8 @@ static int decodeBitmap(struct Image *image, int width, int height,
 	return 0;
 }
 
-int gm1CreateTileObjectList(struct ImageList *image_list, struct Gm1 *gm1)
+int gm1CreateTileObjectList(struct ImageList *image_list, int pixel_buffer_size,
+                            struct Gm1 *gm1)
 {
 	int object_count = 0;
 	struct TileObjectList *object_list = NULL;
@@ -300,12 +301,16 @@ int gm1CreateTileObjectList(struct ImageList *image_list, struct Gm1 *gm1)
 		}
 	}
 
-	if (imageCreateList(image_list, object_count, IMAGE_TYPE_TILE) == -1) {
+	if (imageCreateList(image_list, pixel_buffer_size, object_count,
+	                    object_count, gm1->header.image_count,
+	                    IMAGE_TYPE_TILE) == -1) {
 		return -1;
 	}
 
 	object_list = (struct TileObjectList *)image_list->data;
 
+	int tile_start = 0;
+	int tile = 0;
 	int i = 0;
 	int j = 0;
 	while (i < gm1->header.image_count) {
@@ -322,10 +327,12 @@ int gm1CreateTileObjectList(struct ImageList *image_list, struct Gm1 *gm1)
 		int x = 0;
 		int y = 0;
 
-		if (tileObjectCreate(&object_list->objects[j], part_count) == -1) {
+		if (tileObjectCreate(&object_list->objects[j], part_count,
+		                     tile_start) == -1) {
 			tileObjectDeleteList(object_list);
 			return -1;
 		}
+		tile_start += part_count;
 		object_list->objects[j].id = j;
 
 		while (part < part_count) {
@@ -334,14 +341,14 @@ int gm1CreateTileObjectList(struct ImageList *image_list, struct Gm1 *gm1)
 				x = (image_width / 2) -
 				    current_length * (GM1_TILE_WIDTH + 2) / 2 +
 				    xtile * (GM1_TILE_WIDTH + 2) + 1;
-				object_list->objects[j].parts[part].id = part;
-				object_list->objects[j].parts[part].x = xtile;
-				object_list->objects[j].parts[part].y = ytile;
-				object_list->objects[j].parts[part].rect.width = GM1_TILE_WIDTH;
-				object_list->objects[j].parts[part].rect.height =
+				object_list->tiles[tile].id = part;
+				object_list->tiles[tile].x = xtile;
+				object_list->tiles[tile].y = ytile;
+				object_list->tiles[tile].rect.width = GM1_TILE_WIDTH;
+				object_list->tiles[tile].rect.height =
 				    gm1->image_headers[i].image_height;
-				object_list->objects[j].parts[part].rect.x = x;
-				object_list->objects[j].parts[part].rect.y = y;
+				object_list->tiles[tile].rect.x = x;
+				object_list->tiles[tile].rect.y = y;
 				height = y + gm1->image_headers[i].image_height;
 				if (height > image_height) {
 					image_height = height;
@@ -349,6 +356,7 @@ int gm1CreateTileObjectList(struct ImageList *image_list, struct Gm1 *gm1)
 				xtile++;
 				i++;
 				part++;
+				tile++;
 			} else {
 				xtile = 0;
 				ytile++;
@@ -360,8 +368,8 @@ int gm1CreateTileObjectList(struct ImageList *image_list, struct Gm1 *gm1)
 			}
 		}
 
-		if (imageCreate(&image_list->images[j], image_width, image_height) ==
-		    -1) {
+		if (imageCreate(&image_list->images[j], image_list, image_width,
+		                image_height) == -1) {
 			tileObjectDeleteList(object_list);
 			return -1;
 		}
@@ -372,13 +380,13 @@ int gm1CreateTileObjectList(struct ImageList *image_list, struct Gm1 *gm1)
 	for (j = 0; j < object_list->object_count; j++) {
 		imageClear(&image_list->images[j], 0x00);
 		for (i = 0; i < object_list->objects[j].part_count; i++) {
-			object_list->objects[j].parts[i].rect.y =
+			object_list->tiles[k].rect.y =
 			    (image_list->images[j].height -
-			     (object_list->objects[j].parts[i].rect.y +
-			      object_list->objects[j].parts[i].rect.height));
+			     (object_list->tiles[k].rect.y +
+			      object_list->tiles[k].rect.height));
 
 			if (decodeTgxAndTile(&image_list->images[j],
-			                     &object_list->objects[j].parts[i].rect,
+			                     &object_list->tiles[k].rect,
 			                     &gm1->image_headers[k],
 			                     gm1->image_data + gm1->image_offset_list[k],
 			                     gm1->image_size_list[k]) == -1) {
@@ -391,12 +399,104 @@ int gm1CreateTileObjectList(struct ImageList *image_list, struct Gm1 *gm1)
 
 	return 0;
 }
-int gm1CreateAnimation(struct ImageList *image_list, struct Gm1 *gm1,
-                       int palette)
+
+int gm1CreateUnAssembledTileObjectList(struct ImageList *image_list,
+                                       int pixel_buffer_size, struct Gm1 *gm1)
+{
+	int object_count = 0;
+	struct TileObjectList *object_list = NULL;
+	for (int i = 0; i < gm1->header.image_count; i++) {
+		if (gm1->image_headers[i].part == gm1->image_headers[i].parts - 1) {
+			object_count++;
+		}
+	}
+
+	if (imageCreateList(image_list, pixel_buffer_size, gm1->header.image_count,
+	                    object_count, gm1->header.image_count,
+	                    IMAGE_TYPE_TILE) == -1) {
+		return -1;
+	}
+
+	object_list = (struct TileObjectList *)image_list->data;
+
+	int tile_start = 0;
+	int tile = 0;
+	int i = 0;
+	int j = 0;
+	while (i < gm1->header.image_count) {
+		int part_count = gm1->image_headers[i].parts;
+		int part = 0;
+		int max_length = sqrt(part_count);
+		int current_length = 1;
+		int xtile = 0;
+		int ytile = 0;
+
+		if (tileObjectCreate(&object_list->objects[j], part_count,
+		                     tile_start) == -1) {
+			tileObjectDeleteList(object_list);
+			return -1;
+		}
+		tile_start += part_count;
+		object_list->objects[j].id = j;
+
+		while (part < part_count) {
+			if (xtile < current_length) {
+				object_list->tiles[tile].id = part;
+				object_list->tiles[tile].x = xtile;
+				object_list->tiles[tile].y = ytile;
+				object_list->tiles[tile].rect.width = GM1_TILE_WIDTH;
+				object_list->tiles[tile].rect.height =
+				    gm1->image_headers[i].image_height;
+				object_list->tiles[tile].rect.x = 0;
+				object_list->tiles[tile].rect.y = 0;
+
+				if (imageCreate(&image_list->images[i], image_list,
+				                GM1_TILE_WIDTH,
+				                gm1->image_headers[i].image_height) == -1) {
+					tileObjectDeleteList(object_list);
+					return -1;
+				}
+
+				xtile++;
+				i++;
+				part++;
+				tile++;
+			} else {
+				xtile = 0;
+				ytile++;
+				if (ytile < max_length) {
+					current_length++;
+				} else {
+					current_length--;
+				}
+			}
+		}
+
+		j++;
+	}
+
+	for (i = 0; i < image_list->image_count; i++) {
+		struct Rect rect = {0, 0, image_list->images[i].width,
+			                image_list->images[i].height};
+		imageClear(&image_list->images[i], 0x00);
+		if (decodeTgxAndTile(&image_list->images[i], &rect,
+		                     &gm1->image_headers[i],
+		                     gm1->image_data + gm1->image_offset_list[i],
+		                     gm1->image_size_list[i]) == -1) {
+			tileObjectDeleteList(object_list);
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+int gm1CreateAnimation(struct ImageList *image_list, int pixel_buffer_size,
+                       struct Gm1 *gm1, int palette)
 {
 	struct Animation *animation;
-	if (imageCreateList(image_list, gm1->header.image_count,
-	                    IMAGE_TYPE_ANIMATION)) {
+	if (imageCreateList(image_list, pixel_buffer_size, gm1->header.image_count,
+	                    gm1->header.image_count, 0, IMAGE_TYPE_ANIMATION)) {
 		return -1;
 	}
 	animation = (struct Animation *)image_list->data;
@@ -417,19 +517,28 @@ int gm1CreateAnimation(struct ImageList *image_list, struct Gm1 *gm1,
 	return 0;
 }
 
-int gm1CreateImageList(struct ImageList *image_list, struct Gm1 *gm1,
-                       int palette)
+int gm1CreateImageList(struct ImageList *image_list, int pixel_buffer_size,
+                       struct Gm1 *gm1, int palette, unsigned int assemble)
 {
 	switch (gm1->header.data_type) {
 		case GM1_DATA_TGX_AND_TILE:
-			if (gm1CreateTileObjectList(image_list, gm1) == -1) {
-				return -1;
+		    if (assemble != 0) {
+				if (gm1CreateTileObjectList(image_list, pixel_buffer_size,
+				                            gm1) == -1) {
+					return -1;
+				}
+			} else {
+				if (gm1CreateUnAssembledTileObjectList(
+				        image_list, pixel_buffer_size, gm1) == -1) {
+					return -1;
+				}
 			}
-			break;
+		    break;
 		case GM1_DATA_TGX:
 		case GM1_DATA_TGX_FONT:
 		case GM1_DATA_TGX_CONST_SIZE:
-			if (imageCreateList(image_list, gm1->header.image_count,
+		    if (imageCreateList(image_list, pixel_buffer_size,
+			                    gm1->header.image_count, 0, 0,
 			                    IMAGE_TYPE_OTHER)) {
 				return -1;
 			}
@@ -445,13 +554,15 @@ int gm1CreateImageList(struct ImageList *image_list, struct Gm1 *gm1,
 			}
 			break;
 		case GM1_DATA_ANIMATION:
-			if (gm1CreateAnimation(image_list, gm1, palette) == -1) {
+		    if (gm1CreateAnimation(image_list, pixel_buffer_size, gm1,
+			                       palette) == -1) {
 				return -1;
 			}
 			break;
 		case GM1_DATA_BITMAP:
 		case GM1_DATA_BITMAP_OTHER:
-			if (imageCreateList(image_list, gm1->header.image_count,
+		    if (imageCreateList(image_list, pixel_buffer_size,
+			                    gm1->header.image_count, 0, 0,
 			                    IMAGE_TYPE_OTHER)) {
 				return -1;
 			}
@@ -479,9 +590,9 @@ int gm1SaveHeader(struct Gm1 *gm1, const char *file)
 	if (fp == NULL) {
 		return -1;
 	}
-	const static char *data_type_lookup[] = {"TGX", "ANIMATION", "TGX_AND_TILE",
-	                                         "TGX_FONT", "BITMAP",
-	                                         "TGX_CONST_SIZE", "BITMAP_OTHER"};
+	const static char *data_type_lookup[] = {
+	    "TGX",    "ANIMATION",      "TGX_AND_TILE", "TGX_FONT",
+	    "BITMAP", "TGX_CONST_SIZE", "BITMAP_OTHER"};
 	const static char *size_type_lookup[] = {
 	    "UNDEFINDED", "30x30",   "55x55",   "75x75",
 	    "UNKNOWN_4",  "100x100", "110x110", "130x130",
@@ -550,7 +661,7 @@ int gm1CreatePaletteImage(struct Image *image, const uint16_t *palette,
 	const int linewidth = 256;
 	const int linecount = (GM1_PALETTE_COUNT * GM1_PALETTE_SIZE) / linewidth;
 
-	if (imageCreate(image, size * linewidth, size * linecount) == -1) {
+	if (imageCreate(image, NULL, size * linewidth, size * linecount) == -1) {
 		return -1;
 	}
 	int j = 0;
