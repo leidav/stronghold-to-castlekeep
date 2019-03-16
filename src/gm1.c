@@ -270,6 +270,7 @@ static int decodeBitmap(struct Image *image, int width, int height,
 	uint16_t color = 0;
 	image->width = width;
 	image->height = height;
+	image->pitch = width;
 	image->pixel = malloc(sizeof(*image->pixel) * width * height);
 
 	if (image->pixel == NULL) {
