@@ -396,7 +396,7 @@ static int layout(struct ImageList *image_list, struct Rect *atlas_size,
 
 		if (assembled && (image_list->type == IMAGE_TYPE_TILE)) {
 			struct TileObjectList *tile_objects = image_list->data;
-			struct TileObject *object = &tile_objects->objects[i];
+			struct TileObject *object = &tile_objects->objects[vals[i].id];
 			for (int j = object->tile_start;
 			     j < object->tile_start + object->part_count; j++) {
 				tile_objects->tiles[j].rect.x += posx;
